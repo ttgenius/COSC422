@@ -1,0 +1,37 @@
+#version 400
+
+layout(quads, equal_spacing, ccw) in;
+
+uniform mat4 mvpMatrix;
+uniform sampler2D heightMap;
+uniform float waterLevel;
+//out vec2 texCoord;
+
+void main()
+{
+    float xmin = -45, xmax = +45, zmin = 0, zmax = -90;
+    vec4 posn;
+    vec2 tcoord;
+    float s, t;
+
+    float u = gl_TessCoord.x;
+    float v = gl_TessCoord.y;
+
+    posn = (1-u) * (1-v) * gl_in[0].gl_Position +
+            u * (1-v) * gl_in[1].gl_Position +
+            u * v * gl_in[2].gl_Position +
+            (1-u) * v * gl_in[3].gl_Position;
+
+    s = (posn.x - xmin) / (xmax - xmin);
+    t = (posn.z - zmin) / (zmax - zmin);
+    
+    tcoord = vec2(s, t);
+
+    float height = texture(heightMap, tcoord).r;
+    posn.y = height * 10.0;
+    
+    //if (posn.y < waterLevel) posn.y = waterLevel;
+    
+    //gl_Position = mvpMatrix * posn;
+    gl_Position = posn;
+}
