@@ -20,13 +20,11 @@ void main()
     vec4 snowTexColor = texture(snowTexture, texCoord) * texWeights.y;
     vec4 grassTexColor = texture(grassTexture, texCoord) * texWeights.z;
     
-    if (isWireframe){
-        outputColor = vec4(0, 0, 0, 1);
-    }else{
-        outputColor = vec4(lightFactor) * (waterTexColor + grassTexColor + snowTexColor);
-        if (hasFog){
+  
+    outputColor = vec4(lightFactor) * (waterTexColor + grassTexColor + snowTexColor);
+    if (hasFog){
         vec4 baseColor = vec4(0.3);
         outputColor = mix(baseColor, outputColor, fogFactor);
-        }
     }
+    
 }

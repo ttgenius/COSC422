@@ -8,7 +8,7 @@ uniform bool fixCracking;
 
 int getTesLevel(float d){
     float d_min = 5, d_max = 100;
-    float l_low = 30, l_high = 100;
+    float l_low = 30, l_high =100;
     
     int level = int((d - d_min) / (d_max - d_min) * (l_low - l_high) + l_high);
 

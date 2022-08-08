@@ -22,6 +22,7 @@ void main()
 {
     float xmin = -45, xmax = +45, zmin = 0, zmax = -100;
 	float dmax = 5;
+	float grassWithSnowLevel = 1;
 	float fogGradient = 1.2;
 
 	vec4 posn[3];
@@ -34,8 +35,8 @@ void main()
 		}
     }
 
-	vec3 u = posn[1].xyz - posn[0].xyz;
-	vec3 v = posn[2].xyz - posn[0].xyz;
+	vec3 u = posn[0].xyz - posn[2].xyz;
+	vec3 v = posn[1].xyz - posn[2].xyz;
 	vec4 normal = vec4(normalize(cross(u, v)), 0);
     
     for (int i=0; i< gl_in.length(); i++)
@@ -43,16 +44,22 @@ void main()
 		vec4 oldPos = gl_in[i].gl_Position;
 		
 		//ambient for terrain
-		float ambient = 0.3;
+		float ambient = 0.4;
 
-        if (posn[i].y == waterLevel){
-            texWeights = vec3(1, 0, 0);  
-			ambient = 0.6;  //ambient for 
-
-        }else if (posn[i].y > snowLevel){
-            texWeights = vec3(0, 1, 0);    
-        }else{
-            texWeights = vec3(0, 0, 1);
+        if (posn[i].y == waterLevel){  //water
+            texWeights = vec3(1, 0, 0);
+			ambient = 0.7;
+        }
+		else if (posn[i].y > snowLevel){
+            texWeights = vec3(0, 1, 0);    //snow
+        }
+		else if (posn[i].y >= snowLevel - grassWithSnowLevel){              //grass with snow
+		    float grassWeight = (snowLevel - posn[i].y)/grassWithSnowLevel;
+			float snowWeight = 1-grassWeight;
+		    texWeights = vec3(0, snowWeight, grassWeight);
+		}
+		else{
+            texWeights = vec3(0, 0, 1);  //grass
         }
 		
 		//diffuse

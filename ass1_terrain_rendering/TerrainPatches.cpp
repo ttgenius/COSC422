@@ -34,7 +34,7 @@ glm::mat4 projView;
 float angle = 0;
 float rotation = 0.1; //degree
 float eye_x_max = 180.0, eye_x_min = -180.0;
-float eye_z_max = 180.0, eye_z_min = -180.0;
+float eye_z_max = 130.0, eye_z_min = -225.0;
 
 GLuint fixCrackingLoc;
 bool fixCracking = true;
@@ -260,9 +260,9 @@ void display()
 	glm::mat4 invMatrix = glm::inverse(view);
 	glUniformMatrix4fv(norMatrixLoc, 1, GL_TRUE, &invMatrix[0][0]);
 
-	glm::vec4 lightPosn = glm::vec4(-40.0, 10.0, 60.0, 1.0);
-	//glm::vec4 lightPosn = glm::vec4(123, 40, 5, 1.0);
-	
+	//glm::vec4 lightPosn = glm::vec4(-100.0, 10.0, 10.0, 1.0);
+	glm::vec4 lightPosn = glm::vec4(-50, 10, 60, 1.0);
+	//glm::vec4 lightEye = lightPosn;
 	glm::vec4 lightEye = view * lightPosn;
 	glUniform4fv(lightLoc, 1, &lightEye[0]);
 
@@ -369,7 +369,7 @@ void keyEvents(unsigned char key, int x, int y)
 			waterLevel = 5;
 		}
 	}
-	if (key == 'a' || key == 'A') {
+	if (key == 'a') {
 		waterLevel -= 0.1;
 		if (waterLevel < 0){
 			waterLevel = 0;
