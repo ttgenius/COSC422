@@ -10,25 +10,23 @@ uniform vec4 lightPos;
 uniform float waterLevel;
 uniform float snowLevel;
 uniform bool hasFog;
-
+uniform float fogLevel;
 
 out vec3 texWeights;
 out vec2 texCoord;
-out vec4 lightColour;
-out float fogColour;
-
+out float lightFactor;
+out float fogFactor;
 
 
 void main()
 {
     float xmin = -45, xmax = +45, zmin = 0, zmax = -100;
 	float dmax = 5;
-	float fogLevel = 0.02;
-	float fogGradient = 1.3;
+	float fogGradient = 1.2;
 
 	vec4 posn[3];
 
-	for (int i = 0; i < 3; i++) 
+	for (int i = 0; i < gl_in.length(); i++) 
     {
         posn[i] = gl_in[i].gl_Position;
         if (posn[i].y < waterLevel){
@@ -43,11 +41,13 @@ void main()
     for (int i=0; i< gl_in.length(); i++)
 	{
 		vec4 oldPos = gl_in[i].gl_Position;
+		
+		//ambient for terrain
 		float ambient = 0.3;
 
         if (posn[i].y == waterLevel){
             texWeights = vec3(1, 0, 0);  
-			ambient = 0.7;
+			ambient = 0.6;  //ambient for 
 
         }else if (posn[i].y > snowLevel){
             texWeights = vec3(0, 1, 0);    
@@ -55,31 +55,33 @@ void main()
             texWeights = vec3(0, 0, 1);
         }
 		
-		//lighting
+		//diffuse
 		vec4 posnEye = mvMatrix * posn[i];
 		vec4 normalEye = norMatrix * normal;
 		vec4 lgtVec = normalize(lightPos - posnEye); 
-		vec4 viewVec = normalize(vec4(-posnEye.xyz, 0)); 		
-		vec4 halfVec = normalize(lgtVec + viewVec); 
-			
 		float diffuse = max(dot(lgtVec, normalEye), 0);   
 		
+		//specular
 		float shininess = 100.0;
 		vec4 white = vec4(1.0);
+		vec4 viewVec = normalize(vec4(-posnEye.xyz, 0)); 		
+		vec4 halfVec = normalize(lgtVec + viewVec); 
 		float specTerm = max(dot(halfVec, normalEye), 0);
-		vec4 specular = white *  pow(specTerm, shininess) * texWeights.x ;
+		float specular = pow(specTerm, shininess) * texWeights.x ;
 		
 		//water depth variation
 		float depth = posn[i].y - oldPos.y;
-        float depthScale = depth / dmax;
+        float depthFactor = depth / dmax;
 
-		lightColour = vec4(min(ambient + diffuse + specular - depthScale, 1.0));
+		//sum light
+		lightFactor = min(ambient + diffuse + specular - depthFactor, 1.0);
+		
 
 		if (hasFog){
-		    fogColour = exp(-pow(length(posn[i] * fogLevel), fogGradient));
-            fogColour = clamp(fogColour, 0.0, 1.0);
+		    fogFactor = exp(-pow(length(posn[i] * fogLevel), fogGradient));
+            fogFactor = clamp(fogFactor, 0.0, 1.0);
         } else{
-            fogColour = 1.0;
+            fogFactor = 1.0;
 		}
 		
 		texCoord.s = (posn[i].x - xmin) / (xmax - xmin);

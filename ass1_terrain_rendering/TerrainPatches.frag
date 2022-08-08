@@ -5,11 +5,14 @@ uniform sampler2D grassTexture;
 uniform sampler2D snowTexture;
 
 uniform bool isWireframe;
+uniform bool hasFog;
 
 in vec4 texWeights;
 in vec2 texCoord;
-in vec4 lightColour;
-in float fogColour;
+in float lightFactor;
+in float fogFactor;
+
+out vec4 outputColor;
 
 void main()
 {
@@ -18,10 +21,12 @@ void main()
     vec4 grassTexColor = texture(grassTexture, texCoord) * texWeights.z;
     
     if (isWireframe){
-        gl_FragColor = vec4(0, 0, 0, 1);
+        outputColor = vec4(0, 0, 0, 1);
     }else{
-        gl_FragColor = lightColour *(waterTexColor + grassTexColor + snowTexColor);
-        //vec4 baseColor = vec4(0.3);
-        //gl_FragColor = mix(baseColor, lightColour *(waterTexColor + grassTexColor + snowTexColor), fogColour);
+        outputColor = vec4(lightFactor) * (waterTexColor + grassTexColor + snowTexColor);
+        if (hasFog){
+        vec4 baseColor = vec4(0.3);
+        outputColor = mix(baseColor, outputColor, fogFactor);
+        }
     }
 }

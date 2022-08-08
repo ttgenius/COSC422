@@ -34,7 +34,7 @@ glm::mat4 projView;
 float angle = 0;
 float rotation = 0.1; //degree
 float eye_x_max = 180.0, eye_x_min = -180.0;
-float eye_z_max = 135.0, eye_z_min = -225.0;
+float eye_z_max = 180.0, eye_z_min = -180.0;
 
 GLuint fixCrackingLoc;
 bool fixCracking = true;
@@ -50,6 +50,10 @@ bool isWireframe = false;
 
 GLuint fogLoc;
 bool hasFog = false;
+
+GLuint fogLevelLoc;
+float fogLevel = 0.02;
+
 
 //Generate vertex and element data for the terrain floor
 void generateData()
@@ -190,12 +194,10 @@ void initialise()
 	fixCrackingLoc = glGetUniformLocation(program, "fixCracking");
 	wireframeLoc = glGetUniformLocation(program, "isWireframe");
 	fogLoc = glGetUniformLocation(program, "hasFog");
+	fogLevelLoc = glGetUniformLocation(program, "fogLevel");
 	waterLevelLoc = glGetUniformLocation(program, "waterLevel");
 	snowLevelLoc = glGetUniformLocation(program, "snowLevel");
 	lightLoc = glGetUniformLocation(program, "ligtPos");
-
-	
-
 
 	GLuint texLoc = glGetUniformLocation(program, "heightMap");
 	glUniform1i(texLoc, 0);
@@ -246,20 +248,21 @@ void display()
 	glm::mat4 proj = glm::perspective(30.0f * toRad, 1.25f, 20.0f, 500.0f);  //perspective projection matrix
 	glm::mat4 view = lookAt(glm::vec3(eye_x, eye_y, eye_z), glm::vec3(look_x, look_y, look_z), glm::vec3(0.0, 1.0, 0.0)); //view matri
 	
+	cout << "eyepos x : " << eye_x <<endl;
+	cout << "eyepos y : " << eye_y << endl;
+	cout << "eyepos z : " << eye_z << endl;
+
 	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, &view[0][0]);
-	cout << "eyepos: " << eye_x<< eye_y<< eye_z<<endl;
 	
-	projView = proj * view;  //Product matrix
-	glUniformMatrix4fv(mvpMatrixLoc, 1, GL_FALSE, &projView[0][0]);
-	
+	glm::mat4 mvpMatrix = proj * view;  //Product matrix
+	glUniformMatrix4fv(mvpMatrixLoc, 1, GL_FALSE, &mvpMatrix[0][0]);
 
 	glm::mat4 invMatrix = glm::inverse(view);
 	glUniformMatrix4fv(norMatrixLoc, 1, GL_TRUE, &invMatrix[0][0]);
 
-	//glm::vec4 lightPosn = glm::vec4(-50.0, 10.0, 10.0, 1.0);
-	glm::vec4 lightPosn = glm::vec4(-50.0, 10.0, 60.0, 1.0);
-
-
+	glm::vec4 lightPosn = glm::vec4(-40.0, 10.0, 60.0, 1.0);
+	//glm::vec4 lightPosn = glm::vec4(123, 40, 5, 1.0);
+	
 	glm::vec4 lightEye = view * lightPosn;
 	glUniform4fv(lightLoc, 1, &lightEye[0]);
 
@@ -273,11 +276,15 @@ void display()
 	//fog
 	glUniform1i(fogLoc, hasFog);
 
+	//fogLevel
+	glUniform1f(fogLevelLoc, fogLevel);
+
 	//waterlevel
 	glUniform1f(waterLevelLoc, waterLevel);
 
 	//snowlevel
 	glUniform1f(snowLevelLoc, snowLevel);
+
 
 	
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -330,15 +337,27 @@ void keyEvents(unsigned char key, int x, int y)
 	}
 	if (key == 'c' ) {
 		fixCracking = !fixCracking;
-
 	}
 
 	if (key == 'f') {
 		hasFog = !hasFog;
 
 	}
-	if (key == 0x20) {
-		
+	if (hasFog) {
+		if (key == 'i') {
+			fogLevel += 0.005;
+			if (fogLevel > 0.05) {
+				fogLevel = 0.05;
+			}
+		}
+		if (key == 'd') {
+			fogLevel -= 0.005;
+			if (fogLevel < 0.02) {
+				fogLevel = 0.02;
+			}
+		}
+	}
+	if (key == 0x20) {	
 		if (!(isWireframe = !isWireframe))
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);  // Wire view if true
 		else
@@ -372,6 +391,7 @@ void keyEvents(unsigned char key, int x, int y)
 	glutPostRedisplay();
 
 }
+
 
 int main(int argc, char** argv)
 {
