@@ -34,7 +34,7 @@ glm::mat4 projView;
 float angle = 0;
 float rotation = 0.1; //degree
 float eye_x_max = 180.0, eye_x_min = -180.0;
-float eye_z_max = 130.0, eye_z_min = -225.0;
+float eye_z_max = 180.0, eye_z_min = -180.0;
 
 GLuint fixCrackingLoc;
 bool fixCracking = true;
@@ -261,8 +261,8 @@ void display()
 	glUniformMatrix4fv(norMatrixLoc, 1, GL_TRUE, &invMatrix[0][0]);
 
 	//glm::vec4 lightPosn = glm::vec4(-100.0, 10.0, 10.0, 1.0);
-	glm::vec4 lightPosn = glm::vec4(-50, 10, 60, 1.0);
-	//glm::vec4 lightEye = lightPosn;
+	glm::vec4 lightPosn = glm::vec4(-50, 50, 60, 1.0);
+	//glm::vec4 lightEye = lightPosn;  //specular
 	glm::vec4 lightEye = view * lightPosn;
 	glUniform4fv(lightLoc, 1, &lightEye[0]);
 
@@ -359,7 +359,7 @@ void keyEvents(unsigned char key, int x, int y)
 	}
 	if (key == 0x20) {	
 		if (!(isWireframe = !isWireframe))
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);  // Wire view if true
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}

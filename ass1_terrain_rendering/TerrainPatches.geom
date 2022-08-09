@@ -16,6 +16,7 @@ out vec3 texWeights;
 out vec2 texCoord;
 out float lightFactor;
 out float fogFactor;
+out vec4 specularFactor;
 
 
 void main()
@@ -24,6 +25,7 @@ void main()
 	float dmax = 5;
 	float grassWithSnowLevel = 1;
 	float fogGradient = 1.2;
+	float ambient = 0.2;
 
 	vec4 posn[3];
 
@@ -42,30 +44,28 @@ void main()
     for (int i=0; i< gl_in.length(); i++)
 	{
 		vec4 oldPos = gl_in[i].gl_Position;
-		
-		//ambient for terrain
-		float ambient = 0.4;
 
-        if (posn[i].y == waterLevel){  //water
-            texWeights = vec3(1, 0, 0);
-			ambient = 0.7;
+        if (oldPos.y < waterLevel){  //water
+            texWeights = vec3(1.0, 0.0, 0.0);
+		}
+	    else if (oldPos.y > snowLevel){
+            texWeights = vec3(0.0, 1.0, 0.0);    //snow
         }
-		else if (posn[i].y > snowLevel){
-            texWeights = vec3(0, 1, 0);    //snow
-        }
-		else if (posn[i].y >= snowLevel - grassWithSnowLevel){              //grass with snow
-		    float grassWeight = (snowLevel - posn[i].y)/grassWithSnowLevel;
+		else if (oldPos.y > (snowLevel - grassWithSnowLevel)){              //grass with snow
+		    float grassWeight = (snowLevel - oldPos.y)/grassWithSnowLevel;
 			float snowWeight = 1-grassWeight;
-		    texWeights = vec3(0, snowWeight, grassWeight);
+		    texWeights = vec3(0.0, snowWeight, grassWeight);
 		}
 		else{
-            texWeights = vec3(0, 0, 1);  //grass
+            texWeights = vec3(0.0, 0.0, 1.0);  //grass
         }
 		
+		vec4 lightPosn = vec4(-50, 50, 60, 1.0);
+
 		//diffuse
-		vec4 posnEye = mvMatrix * posn[i];
-		vec4 normalEye = norMatrix * normal;
-		vec4 lgtVec = normalize(lightPos - posnEye); 
+		vec4 posnEye = posn[i];
+		vec4 normalEye = normal;
+		vec4 lgtVec = normalize(lightPosn - posnEye); 
 		float diffuse = max(dot(lgtVec, normalEye), 0);   
 		
 		//specular
@@ -74,21 +74,20 @@ void main()
 		vec4 viewVec = normalize(vec4(-posnEye.xyz, 0)); 		
 		vec4 halfVec = normalize(lgtVec + viewVec); 
 		float specTerm = max(dot(halfVec, normalEye), 0);
-		float specular = pow(specTerm, shininess) * texWeights.x ;
+		vec4 specularFactor = white * pow(specTerm, shininess) ;
 		
 		//water depth variation
 		float depth = posn[i].y - oldPos.y;
         float depthFactor = depth / dmax;
 
 		//sum light
-		lightFactor = min(ambient + diffuse + specular - depthFactor, 1.0);
+		lightFactor = min(ambient + diffuse - depthFactor, 1.0);
 		
-
 		if (hasFog){
-		    fogFactor = exp(-pow(length(posn[i] * fogLevel), fogGradient));
+		    fogFactor = 1-exp(-pow(length(posn[i] * fogLevel), fogGradient));
             fogFactor = clamp(fogFactor, 0.0, 1.0);
         } else{
-            fogFactor = 1.0;
+            fogFactor = 0.0;
 		}
 		
 		texCoord.s = (posn[i].x - xmin) / (xmax - xmin);
@@ -99,4 +98,3 @@ void main()
 	}
 	EndPrimitive();
 }
-

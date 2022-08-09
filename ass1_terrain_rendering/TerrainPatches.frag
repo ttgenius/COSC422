@@ -11,20 +11,22 @@ in vec4 texWeights;
 in vec2 texCoord;
 in float lightFactor;
 in float fogFactor;
+in vec4 specularFactor;
 
 out vec4 outputColor;
 
 void main()
 {
-    vec4 waterTexColor = texture(waterTexture, texCoord) * texWeights.x;
+    vec4 waterTexColor = texture(waterTexture, texCoord)  * texWeights.x;
     vec4 snowTexColor = texture(snowTexture, texCoord) * texWeights.y;
     vec4 grassTexColor = texture(grassTexture, texCoord) * texWeights.z;
     
   
-    outputColor = vec4(lightFactor) * (waterTexColor + grassTexColor + snowTexColor);
+    outputColor = lightFactor * (grassTexColor + snowTexColor + waterTexColor);
+
     if (hasFog){
-        vec4 baseColor = vec4(0.3);
-        outputColor = mix(baseColor, outputColor, fogFactor);
+        vec4 fogColor = vec4(0.3);
+        outputColor = mix(outputColor, fogColor, fogFactor);
     }
     
 }
