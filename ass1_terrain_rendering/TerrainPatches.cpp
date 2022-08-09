@@ -40,7 +40,7 @@ GLuint fixCrackingLoc;
 bool fixCracking = true;
 
 GLuint waterLevelLoc;
-float waterLevel = 2.0;
+float waterLevel = 2.5;
 
 GLuint snowLevelLoc;
 float snowLevel = 6;
@@ -53,6 +53,15 @@ bool hasFog = false;
 
 GLuint fogLevelLoc;
 float fogLevel = 0.02;
+
+
+int waterWaveTick = 0;
+GLuint waterWaveTickLoc;
+
+bool hasWaterWave = true;
+//GLuint hasWaterWaveLoc;
+
+
 
 
 //Generate vertex and element data for the terrain floor
@@ -198,6 +207,7 @@ void initialise()
 	waterLevelLoc = glGetUniformLocation(program, "waterLevel");
 	snowLevelLoc = glGetUniformLocation(program, "snowLevel");
 	lightLoc = glGetUniformLocation(program, "ligtPos");
+	waterWaveTickLoc = glGetUniformLocation(program, "waterWaveTick");
 
 	GLuint texLoc = glGetUniformLocation(program, "heightMap");
 	glUniform1i(texLoc, 0);
@@ -285,7 +295,8 @@ void display()
 	//snowlevel
 	glUniform1f(snowLevelLoc, snowLevel);
 
-
+	//waterwave
+	glUniform1i(waterWaveTickLoc, waterWaveTick);
 	
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	glBindVertexArray(vaoID);
@@ -340,20 +351,23 @@ void keyEvents(unsigned char key, int x, int y)
 	}
 
 	if (key == 'f') {
+		if (fogLevel > 0.02 || fogLevel < 0.02) {
+			fogLevel = 0.02;
+		}
 		hasFog = !hasFog;
 
 	}
 	if (hasFog) {
 		if (key == 'i') {
 			fogLevel += 0.005;
-			if (fogLevel > 0.05) {
-				fogLevel = 0.05;
+			if (fogLevel > 0.04) {
+				fogLevel = 0.04;
 			}
 		}
 		if (key == 'd') {
 			fogLevel -= 0.005;
-			if (fogLevel < 0.02) {
-				fogLevel = 0.02;
+			if (fogLevel < 0.01) {
+				fogLevel = 0.01;
 			}
 		}
 	}
@@ -388,6 +402,22 @@ void keyEvents(unsigned char key, int x, int y)
 			snowLevel = 10;
 		}
 	}
+	if (key == 'v') {
+		hasWaterWave = !hasWaterWave;
+	}
+	
+	glutPostRedisplay();
+}
+
+void waterWaving()
+{
+	if (hasWaterWave) waterWaveTick++;
+}
+
+void animate(int value)
+{
+	waterWaving();
+	glutTimerFunc(100, animate, 0);
 	glutPostRedisplay();
 
 }
@@ -417,6 +447,7 @@ int main(int argc, char** argv)
 	glutDisplayFunc(display); 
 	glutSpecialFunc(special);
 	glutKeyboardFunc(keyEvents);
+	glutTimerFunc(100, animate, 0);
 	glutMainLoop();
 	return 0;
 }

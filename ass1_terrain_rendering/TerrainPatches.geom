@@ -11,12 +11,23 @@ uniform float waterLevel;
 uniform float snowLevel;
 uniform bool hasFog;
 uniform float fogLevel;
+uniform int waterWaveTick;
 
 out vec3 texWeights;
 out vec2 texCoord;
 out float lightFactor;
 out float fogFactor;
-out vec4 specularFactor;
+
+
+float getWaterWavaHeight(vec4 position)
+{
+    float d = waterLevel - position.y;
+    float m = 0.2;  // wave height
+    float waterFrequency = 1.0; 
+    float y = m * sin(waterFrequency * (d - float(waterWaveTick)*0.1));
+
+    return y;
+}
 
 
 void main()
@@ -25,27 +36,29 @@ void main()
 	float dmax = 5;
 	float grassWithSnowLevel = 1;
 	float fogGradient = 1.2;
-	float ambient = 0.2;
-
-	vec4 posn[3];
+	
+	vec4 newPositions[3];
 
 	for (int i = 0; i < gl_in.length(); i++) 
     {
-        posn[i] = gl_in[i].gl_Position;
-        if (posn[i].y < waterLevel){
-            posn[i].y = waterLevel;
+        newPositions[i] = gl_in[i].gl_Position;
+        if (newPositions[i].y < waterLevel){
+            float waterWavaHeight = getWaterWavaHeight(newPositions[i]);
+			newPositions[i].y = waterLevel + waterWavaHeight;
 		}
     }
-
-	vec3 u = posn[0].xyz - posn[2].xyz;
-	vec3 v = posn[1].xyz - posn[2].xyz;
+	
+	//face noraml of a triangle
+	vec3 u = newPositions[0].xyz - newPositions[2].xyz;
+	vec3 v = newPositions[1].xyz - newPositions[2].xyz;
 	vec4 normal = vec4(normalize(cross(u, v)), 0);
     
     for (int i=0; i< gl_in.length(); i++)
 	{
-		vec4 oldPos = gl_in[i].gl_Position;
+		vec4 oldPos = gl_in[i].gl_Position; //unmodified water position
 
-        if (oldPos.y < waterLevel){  //water
+        //pass texWeights to frag shader for selecting correct texture
+		if (oldPos.y < waterLevel){               //water, use oldPos because can't do float compare newPos == waterLevel  
             texWeights = vec3(1.0, 0.0, 0.0);
 		}
 	    else if (oldPos.y > snowLevel){
@@ -60,10 +73,14 @@ void main()
             texWeights = vec3(0.0, 0.0, 1.0);  //grass
         }
 		
+		//lighting calculations
 		vec4 lightPosn = vec4(-50, 50, 60, 1.0);
 
+		//ambient
+		float ambient = 0.2;
+		
 		//diffuse
-		vec4 posnEye = posn[i];
+		vec4 posnEye = newPositions[i];
 		vec4 normalEye = normal;
 		vec4 lgtVec = normalize(lightPosn - posnEye); 
 		float diffuse = max(dot(lgtVec, normalEye), 0);   
@@ -73,27 +90,28 @@ void main()
 		vec4 white = vec4(1.0);
 		vec4 viewVec = normalize(vec4(-posnEye.xyz, 0)); 		
 		vec4 halfVec = normalize(lgtVec + viewVec); 
-		float specTerm = max(dot(halfVec, normalEye), 0);
-		vec4 specularFactor = white * pow(specTerm, shininess) ;
+		float specular = max(dot(halfVec, normalEye), 0) * texWeights.x;
 		
 		//water depth variation
-		float depth = posn[i].y - oldPos.y;
+		float depth = newPositions[i].y - oldPos.y;
         float depthFactor = depth / dmax;
 
-		//sum light
-		lightFactor = min(ambient + diffuse - depthFactor, 1.0);
+		//sum light, output to frag shader
+		lightFactor = min(ambient + diffuse + specular - depthFactor, 1.0);
 		
+		
+		//fog factor for mix in frag
 		if (hasFog){
-		    fogFactor = 1-exp(-pow(length(posn[i] * fogLevel), fogGradient));
+		    fogFactor = 1 - exp(-pow(length(newPositions[i] * fogLevel), fogGradient));
             fogFactor = clamp(fogFactor, 0.0, 1.0);
         } else{
-            fogFactor = 0.0;
+            fogFactor = 0.0; //no fog
 		}
 		
-		texCoord.s = (posn[i].x - xmin) / (xmax - xmin);
-		texCoord.t = (posn[i].z - zmin) / (zmax - zmin);
+		texCoord.s = (newPositions[i].x - xmin) / (xmax - xmin);
+		texCoord.t = (newPositions[i].z - zmin) / (zmax - zmin);
 
-		gl_Position = mvpMatrix * posn[i];
+		gl_Position = mvpMatrix * newPositions[i];
 		EmitVertex();	
 	}
 	EndPrimitive();
