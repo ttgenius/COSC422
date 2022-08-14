@@ -1,11 +1,14 @@
 //  ========================================================================
-//  COSC363: Computer Graphics (2022);  University of Canterbury.
+//  COSC422: Computer Graphics (2022);  University of Canterbury.
 //  FILE NAME: TerrainPatches.cpp
-//
-//	The program generates and loads the mesh data for a terrain floor (100 verts, 81 elems).
-//  This program requires the following files:
-//         TerrainPatches.vert, TerrainPatches.frag
-//         TerrainPatches.cont, TerrainPatches.eval
+//  NAME: Yuezhang Zhu
+//  ID: 97245310
+//	The program generates and loads the mesh data for 2 terrain floors (100 verts, 81 elems).
+//  This program requires the following files in the same directory as TerrainPatches.cpp:
+//         loadTGA.h, TerrainPatches.vert, TerrainPatches.cont,
+//         TerrainPatches.eval, TerrainPatches.geom, TerrainPatches.frag
+//  This program requires the following directories in the same directory as TerrainPatches.cpp:
+//         HeightMaps, SurfaceTextures   
 //  ========================================================================
 
 #include <iostream>
@@ -54,15 +57,12 @@ bool hasFog = false;
 GLuint fogLevelLoc;
 float fogLevel = 0.02;
 
-
 int waterWaveTick = 0;
 GLuint waterWaveTickLoc;
-
 bool hasWaterWave = true;
-//GLuint hasWaterWaveLoc;
 
-
-
+GLuint highTesLoc;
+bool isHighTes = true;
 
 //Generate vertex and element data for the terrain floor
 void generateData()
@@ -208,6 +208,8 @@ void initialise()
 	snowLevelLoc = glGetUniformLocation(program, "snowLevel");
 	lightLoc = glGetUniformLocation(program, "ligtPos");
 	waterWaveTickLoc = glGetUniformLocation(program, "waterWaveTick");
+	highTesLoc = glGetUniformLocation(program, "isHighTes");
+	
 
 	GLuint texLoc = glGetUniformLocation(program, "heightMap");
 	glUniform1i(texLoc, 0);
@@ -258,10 +260,6 @@ void display()
 	glm::mat4 proj = glm::perspective(30.0f * toRad, 1.25f, 20.0f, 500.0f);  //perspective projection matrix
 	glm::mat4 view = lookAt(glm::vec3(eye_x, eye_y, eye_z), glm::vec3(look_x, look_y, look_z), glm::vec3(0.0, 1.0, 0.0)); //view matri
 	
-	cout << "eyepos x : " << eye_x <<endl;
-	cout << "eyepos y : " << eye_y << endl;
-	cout << "eyepos z : " << eye_z << endl;
-
 	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, &view[0][0]);
 	
 	glm::mat4 mvpMatrix = proj * view;  //Product matrix
@@ -270,15 +268,16 @@ void display()
 	glm::mat4 invMatrix = glm::inverse(view);
 	glUniformMatrix4fv(norMatrixLoc, 1, GL_TRUE, &invMatrix[0][0]);
 
-	//glm::vec4 lightPosn = glm::vec4(-100.0, 10.0, 10.0, 1.0);
 	glm::vec4 lightPosn = glm::vec4(-50, 50, 60, 1.0);
-	//glm::vec4 lightEye = lightPosn;  //specular
 	glm::vec4 lightEye = view * lightPosn;
 	glUniform4fv(lightLoc, 1, &lightEye[0]);
 
-	
+
 	//cracking
 	glUniform1i(fixCrackingLoc, fixCracking);
+
+	//tessellation level
+	glUniform1i(highTesLoc, isHighTes);
 
 	//wireframe
 	glUniform1i(wireframeLoc, isWireframe);
@@ -327,6 +326,7 @@ void special(int key, int x, int y)
 	if (eye_x <= eye_x_min) eye_x = eye_x_min;
 	if (eye_z >= eye_z_max) eye_z = eye_z_max;
 	if (eye_z <= eye_z_min) eye_z = eye_z_min;
+	
 	look_x = eye_x + 90 * sin(angle);
 	look_z = eye_z - 90 * cos(angle);
 	
@@ -355,8 +355,8 @@ void keyEvents(unsigned char key, int x, int y)
 			fogLevel = 0.02;
 		}
 		hasFog = !hasFog;
-
 	}
+
 	if (hasFog) {
 		if (key == 'i') {
 			fogLevel += 0.005;
@@ -371,6 +371,11 @@ void keyEvents(unsigned char key, int x, int y)
 			}
 		}
 	}
+	
+	if (key == 't') {
+		isHighTes = !isHighTes;
+	}
+
 	if (key == 0x20) {	
 		if (!(isWireframe = !isWireframe))
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -392,8 +397,8 @@ void keyEvents(unsigned char key, int x, int y)
 
 	if (key == 'w') {
 		snowLevel -= 0.1;
-		if (snowLevel < 4) {
-			snowLevel = 4;
+		if (snowLevel < 3 ) {
+			snowLevel = 3;
 		}
 	}
 	if (key == 's') {
@@ -405,7 +410,6 @@ void keyEvents(unsigned char key, int x, int y)
 	if (key == 'v') {
 		hasWaterWave = !hasWaterWave;
 	}
-	
 	glutPostRedisplay();
 }
 

@@ -30,6 +30,5 @@ void main()
     float height = texture(heightMap, tcoord).r;
     posn.y = height * 10.0;
     
-    //gl_Position = mvpMatrix * posn;
     gl_Position = posn;
 }

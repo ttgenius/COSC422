@@ -4,12 +4,10 @@ layout(vertices = 4) out;
 
 uniform vec4 eyePos; //camera position
 uniform bool fixCracking;
+uniform bool isHighTes;
 
-
-int getTesLevel(float d){
-    float d_min = 5, d_max = 100;
-    float l_low = 30, l_high =100;
-    
+int getTesLevel(float d, float d_min, float d_max, float l_low, float l_high){
+      
     int level = int((d - d_min) / (d_max - d_min) * (l_low - l_high) + l_high);
 
     if (level < l_low){
@@ -24,6 +22,15 @@ int getTesLevel(float d){
 
 void main()
 {
+    
+    float d_min = 5, d_max = 100;
+    float l_low = 1, l_high = 10;  // to see Level of detail, use 1 and 10
+    
+    if (isHighTes){
+        l_low = 30.0;
+        l_high = 100.0;
+    }
+
     int innerLevel;
     int outerLevels[4];
     
@@ -34,14 +41,14 @@ void main()
    
     float patch_d = distance(eyePos, patch_center); 
     
-    innerLevel = getTesLevel(patch_d);
+    innerLevel = getTesLevel(patch_d, d_min, d_max, l_low, l_high);
    
     if (fixCracking){
         for (int i = 0; i < 4; i++){
             vec4 side_center = (gl_in[int(mod(i - 1, 4))].gl_Position
                                 + gl_in[i].gl_Position) * 0.5;            
             float side_d = distance(eyePos, side_center);            
-            outerLevels[i] = getTesLevel(side_d);
+            outerLevels[i] = getTesLevel(side_d, d_min, d_max, l_low, l_high);
         }
     }else{
         for (int i = 0; i < 4; i++){

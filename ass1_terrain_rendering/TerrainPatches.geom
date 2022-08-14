@@ -25,7 +25,6 @@ float getWaterWavaHeight(vec4 position)
     float m = 0.2;  // wave height
     float waterFrequency = 1.0; 
     float y = m * sin(waterFrequency * (d - float(waterWaveTick)*0.1));
-
     return y;
 }
 
@@ -58,13 +57,13 @@ void main()
 		vec4 oldPos = gl_in[i].gl_Position; //unmodified water position
 
         //pass texWeights to frag shader for selecting correct texture
-		if (oldPos.y < waterLevel){               //water, use oldPos because can't do float compare newPos == waterLevel  
+		if (oldPos.y < waterLevel){               //water  
             texWeights = vec3(1.0, 0.0, 0.0);
 		}
 	    else if (oldPos.y > snowLevel){
             texWeights = vec3(0.0, 1.0, 0.0);    //snow
         }
-		else if (oldPos.y > (snowLevel - grassWithSnowLevel)){              //grass with snow
+		else if (oldPos.y > (snowLevel - grassWithSnowLevel)){ //grass with snow
 		    float grassWeight = (snowLevel - oldPos.y)/grassWithSnowLevel;
 			float snowWeight = 1-grassWeight;
 		    texWeights = vec3(0.0, snowWeight, grassWeight);
@@ -85,7 +84,7 @@ void main()
 		vec4 lgtVec = normalize(lightPosn - posnEye); 
 		float diffuse = max(dot(lgtVec, normalEye), 0);   
 		
-		//specular
+		//specular for water
 		float shininess = 100.0;
 		vec4 white = vec4(1.0);
 		vec4 viewVec = normalize(vec4(-posnEye.xyz, 0)); 		
