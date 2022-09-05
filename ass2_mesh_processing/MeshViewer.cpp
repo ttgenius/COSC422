@@ -93,7 +93,7 @@ void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& z
 	pmin = pmax = mesh.point(*vit);
 
 	//Iterate over the mesh using a vertex iterator
-	for (vit = mesh.vertices_begin()+1; vit != mesh.vertices_end(); vit++)
+	for (vit = mesh.vertices_begin() + 1; vit != mesh.vertices_end(); vit++)
 	{
 		pmin.minimize(mesh.point(*vit));
 		pmax.maximize(mesh.point(*vit));
@@ -115,9 +115,9 @@ void initialize()
 	}
 	getBoundingBox(xmin, xmax, ymin, ymax, zmin, zmax);
 
-	xc = (xmin + xmax)*0.5f;
-	yc = (ymin + ymax)*0.5f;
-	zc = (zmin + zmax)*0.5f;
+	xc = (xmin + xmax) * 0.5f;
+	yc = (ymin + ymax) * 0.5f;
+	zc = (zmin + zmax) * 0.5f;
 	OpenMesh::Vec3f box = { xmax - xc,  ymax - yc, zmax - zc };
 	modelScale = 1.0 / box.max();
 
@@ -129,7 +129,7 @@ void initialize()
 	glAttachShader(program, shaderv);
 	glAttachShader(program, shaderf);
 	glLinkProgram(program);
-	
+
 	//=============load textures===================================
 	loadTextures();
 
@@ -152,7 +152,7 @@ void initialize()
 	int num_faces = mesh.n_faces();
 	float* vertPos = new float[num_verts * 3];
 	float* vertNorm = new float[num_verts * 3];
-	num_Elems = num_faces * 3;
+	num_Elems = num_faces * 6;
 	short* elems = new short[num_Elems];   //Asumption: Triangle mesh
 
 	if (!mesh.has_vertex_normals())
@@ -198,8 +198,8 @@ void initialize()
 	//		indx++;
 	//	}
 	//}
-	
-	
+
+
 	OpenMesh::HalfedgeHandle heH, oheH;
 	MyMesh::FaceHalfedgeIter fhit;
 
@@ -222,7 +222,7 @@ void initialize()
 				elems[indx + 1] = elems[indx]; //Repeated vertex
 			}
 			indx += 2;
-			
+
 		}
 	}
 
@@ -236,7 +236,7 @@ void initialize()
 	glGenBuffers(3, vboID);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vboID[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)* num_verts * 3, vertPos, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * num_verts * 3, vertPos, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(0);  // Vertex position
 
@@ -269,7 +269,7 @@ void initialize()
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);   
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 //Callback function for special keyboard events
@@ -286,7 +286,7 @@ void special(int key, int x, int y)
 void keyboard(unsigned char key, int x, int y)
 {
 	if (key == 'w') wireframe = !wireframe;
-	if(wireframe) 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	if (wireframe) 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	else 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glutPostRedisplay();
 }
@@ -330,7 +330,7 @@ void display()
 int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB |GLUT_DEPTH);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(600, 600);
 	glutInitWindowPosition(10, 10);
 	glutCreateWindow("Mesh Viewer (OpenMesh)");
