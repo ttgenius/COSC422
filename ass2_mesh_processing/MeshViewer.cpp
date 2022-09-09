@@ -30,15 +30,29 @@ float modelScale;
 float xc, yc, zc;
 float rotn_x = 0.0, rotn_y = 0.0;
 GLuint vaoID;
-GLuint mvpMatrixLoc, mvMatrixLoc, norMatrixLoc, lgtLoc, wireLoc;
+GLuint mvpMatrixLoc, mvMatrixLoc, norMatrixLoc, lgtLoc, wireLoc, texLoc;
 glm::mat4 view, projView;
 int num_Elems;
 bool wireframe = false;
 
 
+GLuint  NPRModeLoc;
+bool NPRMode = true;
+
+GLuint creaseLoc;
+glm::vec2 creaseEdgeSize = glm::vec2(1, 1);
+
+GLuint creaseThresholdLoc;
+float creaseThreshold = 20;
+
+GLuint silhoutteLoc;
+glm::vec2 silhoutteEdgeSize = glm::vec2(0, 4);
+
+
+
 void loadTextures()
 {
-	string files[3] = { "Textures/PENCIL0.tga", "Textures/PENCIL1.tga", "Textures/PENCIL2.tga" };
+	string files[3] = { "Textures/pencil_stroke1.tga", "Textures/pencil_stroke2.tga", "Textures/pencil_stroke3.tga" };
 	GLuint texID[3];
 	glGenTextures(3, texID);
 
@@ -93,7 +107,7 @@ void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& z
 	pmin = pmax = mesh.point(*vit);
 
 	//Iterate over the mesh using a vertex iterator
-	for (vit = mesh.vertices_begin() + 1; vit != mesh.vertices_end(); vit++)
+	for (vit = mesh.vertices_begin()+1; vit != mesh.vertices_end(); vit++)
 	{
 		pmin.minimize(mesh.point(*vit));
 		pmax.maximize(mesh.point(*vit));
@@ -115,21 +129,23 @@ void initialize()
 	}
 	getBoundingBox(xmin, xmax, ymin, ymax, zmin, zmax);
 
-	xc = (xmin + xmax) * 0.5f;
-	yc = (ymin + ymax) * 0.5f;
-	zc = (zmin + zmax) * 0.5f;
+	xc = (xmin + xmax)*0.5f;
+	yc = (ymin + ymax)*0.5f;
+	zc = (zmin + zmax)*0.5f;
 	OpenMesh::Vec3f box = { xmax - xc,  ymax - yc, zmax - zc };
 	modelScale = 1.0 / box.max();
 
 	//============= Load shaders ==================
 	GLuint shaderv = loadShader(GL_VERTEX_SHADER, "MeshViewer.vert");
+	GLuint shaderg = loadShader(GL_GEOMETRY_SHADER, "MeshViewer.geom");
 	GLuint shaderf = loadShader(GL_FRAGMENT_SHADER, "MeshViewer.frag");
 
 	GLuint program = glCreateProgram();
 	glAttachShader(program, shaderv);
+	glAttachShader(program, shaderg);
 	glAttachShader(program, shaderf);
 	glLinkProgram(program);
-
+	
 	//=============load textures===================================
 	loadTextures();
 
@@ -198,8 +214,8 @@ void initialize()
 	//		indx++;
 	//	}
 	//}
-
-
+	
+	
 	OpenMesh::HalfedgeHandle heH, oheH;
 	MyMesh::FaceHalfedgeIter fhit;
 
@@ -222,10 +238,10 @@ void initialize()
 				elems[indx + 1] = elems[indx]; //Repeated vertex
 			}
 			indx += 2;
-
+			
 		}
 	}
-
+	
 	mesh.release_vertex_normals();
 
 	//============== Load buffer data ==============
@@ -236,7 +252,7 @@ void initialize()
 	glGenBuffers(3, vboID);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vboID[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * num_verts * 3, vertPos, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float)* num_verts * 3, vertPos, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(0);  // Vertex position
 
@@ -257,6 +273,19 @@ void initialize()
 	norMatrixLoc = glGetUniformLocation(program, "norMatrix");
 	wireLoc = glGetUniformLocation(program, "wireMode");
 	lgtLoc = glGetUniformLocation(program, "lightPos");
+
+	texLoc = glGetUniformLocation(program, "texSample");
+	NPRModeLoc = glGetUniformLocation(program, "NPRMode");
+	creaseLoc = glGetUniformLocation(program, "creaseEdges");
+	silhoutteLoc = glGetUniformLocation(program, "silhoutteEdges");
+	creaseThresholdLoc = glGetUniformLocation(program, "creaseEdgeThreshold");
+
+
+
+	int texVals[3] = { 0, 1, 2 };
+	glUniform1iv(texLoc, 3, texVals);
+
+
 	glm::vec4 light = glm::vec4(5.0, 5.0, 10.0, 1.0);
 	glm::mat4 proj;
 	proj = glm::perspective(60.0f * CDR, 1.0f, 2.0f, 10.0f);  //perspective projection matrix
@@ -269,7 +298,7 @@ void initialize()
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);   
 }
 
 //Callback function for special keyboard events
@@ -286,7 +315,7 @@ void special(int key, int x, int y)
 void keyboard(unsigned char key, int x, int y)
 {
 	if (key == 'w') wireframe = !wireframe;
-	if (wireframe) 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	if(wireframe) 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	else 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glutPostRedisplay();
 }
@@ -313,6 +342,13 @@ void display()
 	if (wireframe) glUniform1i(wireLoc, 1);
 	else		   glUniform1i(wireLoc, 0);
 
+	glUniform1i(NPRModeLoc, NPRMode);
+
+	glUniform2fv(silhoutteLoc, 1, &silhoutteEdgeSize[0]);
+	glUniform2fv(creaseLoc, 1, &creaseEdgeSize[0]);
+
+	glUniform1f(creaseThresholdLoc, creaseThreshold);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glBindVertexArray(vaoID);
@@ -330,7 +366,7 @@ void display()
 int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB |GLUT_DEPTH);
 	glutInitWindowSize(600, 600);
 	glutInitWindowPosition(10, 10);
 	glutCreateWindow("Mesh Viewer (OpenMesh)");
