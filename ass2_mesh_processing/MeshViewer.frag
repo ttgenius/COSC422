@@ -34,8 +34,8 @@ vec4 getPencilColor()
     } else {
             if (diffTerm > 0.35){
                 penColor = mix(texture(texSample[1], texCoords), texture(texSample[0], texCoords), (diffTerm - 0.35) / 0.35);
-            } else if (diffTerm < 0.175){
-                penColor = mix(texture(texSample[2], texCoords), texture(texSample[1], texCoords), (diffTerm) / 0.175);
+            } else if (diffTerm < 0.2){
+                penColor = mix(texture(texSample[2], texCoords), texture(texSample[1], texCoords), diffTerm / 0.175);
             } else {
                 penColor = texture(texSample[1], texCoords);
             }    

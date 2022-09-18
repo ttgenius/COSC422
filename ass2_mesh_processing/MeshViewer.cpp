@@ -21,6 +21,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/freeglut.h>
 #include "loadTGA.h"
+#include <OpenMesh/Tools/Decimater/DecimaterT.hh>
+#include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 using namespace std;
 
 
@@ -48,6 +50,10 @@ float creaseThreshold = 20;
 GLuint silhoutteLoc;
 glm::vec2 silhoutteEdgeSize = glm::vec2(0, 4);
 
+float zoomLevel = 1;
+
+int nverts = 200;
+bool meshSimple = false;
 
 
 void loadTextures()
@@ -116,6 +122,24 @@ void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& z
 	xmax = pmax[0];  ymax = pmax[1];  zmax = pmax[2];
 }
 
+
+
+void meshSimplification()
+{
+	// Decimation Module Handle type
+	typedef OpenMesh::Decimater::DecimaterT< MyMesh > MyDecimater;
+	typedef OpenMesh::Decimater::ModQuadricT< MyMesh >::Handle HModQuadric;
+	MyDecimater decimater(mesh); // a decimater object, connected to a mesh
+	HModQuadric hModQuadric; // use a quadric module
+	decimater.add(hModQuadric); // register module
+	decimater.initialize();
+	decimater.decimate_to(nverts); // nverts = 200
+	mesh.garbage_collection();
+}
+
+
+
+
 //Initialisation function for OpenMesh, shaders and OpenGL
 void initialize()
 {
@@ -127,6 +151,11 @@ void initialize()
 	{
 		cerr << "Mesh file read error.\n";
 	}
+
+	if (meshSimple) {
+		meshSimplification();
+	}
+
 	getBoundingBox(xmin, xmax, ymin, ymax, zmin, zmax);
 
 	xc = (xmin + xmax)*0.5f;
@@ -298,25 +327,83 @@ void initialize()
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);   
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); 
+
 }
+
+
 
 //Callback function for special keyboard events
 void special(int key, int x, int y)
 {
-	if (key == GLUT_KEY_LEFT) rotn_y -= 5.0;
-	else if (key == GLUT_KEY_RIGHT) rotn_y += 5.0;
-	else if (key == GLUT_KEY_UP) rotn_x -= 5.0;
-	else if (key == GLUT_KEY_DOWN) rotn_x += 5.0;
+	if (key == GLUT_KEY_LEFT) {
+		rotn_y -= 5.0;
+	}
+	else if (key == GLUT_KEY_RIGHT) {
+		rotn_y += 5.0;
+	}
+	else if (key == GLUT_KEY_UP) {
+		rotn_x -= 5.0;
+	}
+	else if (key == GLUT_KEY_DOWN) {
+		rotn_x += 5.0;
+	}
+	else if (key == GLUT_KEY_PAGE_UP) { //zoom in
+		if (zoomLevel <10) {
+			zoomLevel += 0.1;
+		}
+	}
+	else if (key == GLUT_KEY_PAGE_DOWN) {
+		if (zoomLevel >1) {
+			zoomLevel -= 0.1;
+		}
+	}
 	glutPostRedisplay();
 }
 
 //Callback function for keyboard events
 void keyboard(unsigned char key, int x, int y)
 {
-	if (key == 'w') wireframe = !wireframe;
-	if(wireframe) 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	if (key == '1') {
+		wireframe = !wireframe;
+	}
+	if (key == '2') {
+		meshSimple = !meshSimple;
+		//wireframe = true;
+		initialize();
+	}
+	if (wireframe) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
+	else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
+	if (key == ' ') {
+		NPRMode = !NPRMode;
+	}
+	if (key == 'q') {
+		silhoutteEdgeSize[1] += 0.1;
+	}
+	if (key == 'a') {
+		silhoutteEdgeSize[1] -= 0.1;
+	}
+	if (key == 'w') {
+		creaseEdgeSize[1] += 0.1;
+	}
+	if (key == 's') {
+		creaseEdgeSize[1] -= 0.1;
+	}
+	if (key == 'i') {
+		creaseThreshold += 1;
+	}
+	if (key == 'd') {
+		creaseThreshold -= 1;
+
+	}
+	
+	
+
 	glutPostRedisplay();
 }
 
@@ -327,7 +414,7 @@ void display()
 	glm::mat4 matrix = glm::mat4(1.0);
 	matrix = glm::rotate(matrix, rotn_x * CDR, glm::vec3(1.0, 0.0, 0.0));  //rotation about x
 	matrix = glm::rotate(matrix, rotn_y * CDR, glm::vec3(0.0, 1.0, 0.0));  //rotation about y
-	matrix = glm::scale(matrix, glm::vec3(modelScale, modelScale, modelScale));
+	matrix = glm::scale(matrix, glm::vec3(modelScale, modelScale, modelScale) * zoomLevel);
 	matrix = glm::translate(matrix, glm::vec3(-xc, -yc, -zc));
 
 	glm::mat4 viewMatrix = view * matrix;		//The model-view matrix
