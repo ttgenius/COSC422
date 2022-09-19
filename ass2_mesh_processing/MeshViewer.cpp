@@ -50,6 +50,19 @@ float creaseThreshold = 20;
 GLuint silhoutteLoc;
 glm::vec2 silhoutteEdgeSize = glm::vec2(0, 4);
 
+
+GLuint enableSilhoutteLoc;
+bool enableSilhoutte = true;
+
+GLuint enableCreaseLoc;
+bool enableCrease = true;
+
+GLuint minimizeEdgeGapLoc;
+float minimizeEdgeGap = 1;
+
+GLuint multiTextureLoc;
+bool multiTexture = true;
+
 float zoomLevel = 1;
 
 int nverts = 200;
@@ -57,8 +70,14 @@ bool meshSimple = false;
 
 
 void loadTextures()
-{
-	string files[3] = { "Textures/pencil_stroke1.tga", "Textures/pencil_stroke2.tga", "Textures/pencil_stroke3.tga" };
+{	
+	string textureDir = "./Textures/";
+	const char* textures[3][4] = {
+			{"pencil000_64.tga", "pencil000_32.tga", "pencil000_16.tga", "pencil000_8.tga"},
+			{"pencil1_64.tga", "pencil1_32.tga", "pencil1_16.tga", "pencil1_8.tga"},
+			{"pencil2_64.tga", "pencil2_32.tga", "pencil2_16.tga", "pencil2_8.tga"},
+	};
+
 	GLuint texID[3];
 	glGenTextures(3, texID);
 
@@ -66,10 +85,17 @@ void loadTextures()
 	{
 		glActiveTexture(GL_TEXTURE0 + i);  //Texture unit
 		glBindTexture(GL_TEXTURE_2D, texID[i]);
-		loadTGA(files[i]);
 
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+		int texlevel = 0;
+		for (string texture : textures[i]) {
+			loadTGA_mipmap(textureDir + texture, texlevel++);
+
+		}
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 }
@@ -308,6 +334,10 @@ void initialize()
 	creaseLoc = glGetUniformLocation(program, "creaseEdges");
 	silhoutteLoc = glGetUniformLocation(program, "silhoutteEdges");
 	creaseThresholdLoc = glGetUniformLocation(program, "creaseEdgeThreshold");
+	enableSilhoutteLoc = glGetUniformLocation(program, "enableSilhoutte");
+	enableCreaseLoc = glGetUniformLocation(program, "enableCrease");
+	multiTextureLoc = glGetUniformLocation(program, "multiTexture");
+	minimizeEdgeGapLoc = glGetUniformLocation(program, "minimizeEdgeGap");
 
 
 
@@ -364,6 +394,8 @@ void special(int key, int x, int y)
 //Callback function for keyboard events
 void keyboard(unsigned char key, int x, int y)
 {
+	if (key == 0x1B) exit(EXIT_SUCCESS);
+
 	if (key == '1') {
 		wireframe = !wireframe;
 	}
@@ -399,10 +431,22 @@ void keyboard(unsigned char key, int x, int y)
 	}
 	if (key == 'd') {
 		creaseThreshold -= 1;
-
 	}
-	
-	
+	if (key == 'm') {
+		minimizeEdgeGap += 0.1;
+	}
+	if (key == 'n') {
+		minimizeEdgeGap -= 0.1;
+	}
+	if (key == 'h') {
+		enableSilhoutte = !enableSilhoutte;
+	}
+	if (key == 'c') {
+		enableCrease = !enableCrease;
+	}
+	if (key == 't') {
+		multiTexture = !multiTexture;
+	}
 
 	glutPostRedisplay();
 }
@@ -435,6 +479,14 @@ void display()
 	glUniform2fv(creaseLoc, 1, &creaseEdgeSize[0]);
 
 	glUniform1f(creaseThresholdLoc, creaseThreshold);
+	
+	glUniform1i(enableSilhoutteLoc, enableSilhoutte);
+	glUniform1i(enableCreaseLoc, enableCrease);
+	
+	glUniform1i(multiTextureLoc, multiTexture);
+
+	glUniform1f(minimizeEdgeGapLoc, minimizeEdgeGap);
+
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

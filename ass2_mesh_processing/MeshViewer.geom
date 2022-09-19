@@ -9,11 +9,16 @@ uniform mat4 mvpMatrix;
 uniform mat4 norMatrix;
 uniform vec4 lightPos;
 
+uniform bool enableSilhoutte;
+uniform bool enableCrease;
+
 uniform vec2 creaseEdges;
 uniform vec2 silhoutteEdges;
 
 uniform float creaseThreshold;
 float T = cos(creaseThreshold * 3.14159  / 180.0);
+
+uniform float minimizeEdgeGap;
 
 in vec3 unitNormal[];
 
@@ -40,22 +45,14 @@ void drawSilhoutteEdge(vec4 a, vec4 b, vec4 n1, vec4 n2){
     float d1 = silhoutteEdges[0];
     float d2 = silhoutteEdges[1];
 
-/*
-    if (enableOverlap == 1){
-        vec4 a_to_b = 3 * normalize(b - a);
-        vec4 b_to_a = 3 * normalize(a - b);
-        p1 = (a + b_to_a) + d1 * v;
-        p2 = (a + b_to_a) + d2 * v;
-        q1 = (b + a_to_b) + d1 * v;
-        q2 = (b + a_to_b) + d2 * v;
-    } else {
-*/
-        p1 = a + d1 * v;
-        p2 = a + d2 * v;
-        q1 = b + d1 * v;
-        q2 = b + d2 * v;
-   // }
 
+    vec4 ab = minimizeEdgeGap * normalize(b - a);  // a to b
+    vec4 ba = minimizeEdgeGap * normalize(a - b);  // b to a
+    p1 = (a + ba) + d1 * v;
+    p2 = (a + ba) + d2 * v;
+    q1 = (b + ab) + d1 * v;
+    q2 = (b + ab) + d2 * v;
+ 
     isEdgeVertex = 1;
     
     gl_Position = mvpMatrix * p1;
@@ -83,10 +80,13 @@ void drawCreaseEdge(vec4 a, vec4 b, vec4 n1, vec4 n2){
     float d1 = creaseEdges[0];
     float d2 = creaseEdges[1];
 
-    vec4 p1 = a + d1 * v + d2 * w;
-    vec4 p2 = a + d1 * v - d2 * w;
-    vec4 q1 = b + d1 * v + d2 * w;
-    vec4 q2 = b + d1 * v - d2 * w;
+    vec4 ab = minimizeEdgeGap * normalize(b - a);  // a to b
+    vec4 ba = minimizeEdgeGap * normalize(a - b);  // b to a
+
+    vec4 p1 = (a + ba) + d1 * v + d2 * w;
+    vec4 p2 = (a + ba) + d1 * v - d2 * w;
+    vec4 q1 = (b + ab) + d1 * v + d2 * w;
+    vec4 q2 = (b + ab) + d1 * v - d2 * w;
     
     isEdgeVertex = 1;
     
@@ -108,17 +108,17 @@ void drawCreaseEdge(vec4 a, vec4 b, vec4 n1, vec4 n2){
 
 void drawEdge(int index){
     vec4 adjFaceNormal = getFaceNormal(index, (index + 1) % 6, (index + 2) % 6);
-    //if (enableSil == 1) {
+    if (enableSilhoutte) {
         if ((mvMatrix * faceNormal).z > 0 && (mvMatrix * adjFaceNormal).z < 0){
             drawSilhoutteEdge(gl_in[index].gl_Position, gl_in[(index + 2) % 6].gl_Position, faceNormal, adjFaceNormal);
         }
-   // }
+    }
 
-   // if (enableCrease == 1) {
+    if (enableCrease) {
         if (dot(faceNormal, adjFaceNormal) < T){
             drawCreaseEdge(gl_in[index].gl_Position, gl_in[(index + 2) % 6].gl_Position, faceNormal, adjFaceNormal);
         }
-   // }
+    }
 }
 
 

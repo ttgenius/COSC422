@@ -14,7 +14,7 @@
 #include <fstream>
 using namespace std;
 
-void loadTGA(string filename)
+void loadTGA_mipmap(string filename, int level)
 {
     char id, cmap, imgtype, bpp, c_garb;
     char* imageData, temp;
@@ -64,13 +64,13 @@ void loadTGA(string filename)
 	switch (nbytes)
 	{
 	     case 1:
-	         glTexImage2D(GL_TEXTURE_2D, 0, 1, wid, hgt, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, imageData);
+	         glTexImage2D(GL_TEXTURE_2D, level, 1, wid, hgt, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, imageData);
 	         break;
 	     case 3:
-	         glTexImage2D(GL_TEXTURE_2D, 0, 3, wid, hgt, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+	         glTexImage2D(GL_TEXTURE_2D, level, 3, wid, hgt, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
 	         break;
 	     case 4:
-	         glTexImage2D(GL_TEXTURE_2D, 0, 4, wid, hgt, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+	         glTexImage2D(GL_TEXTURE_2D, level, 4, wid, hgt, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
 	         break;
      }
      delete imageData;	         	         
