@@ -1,6 +1,7 @@
 //  ========================================================================
 //  COSC422: Advanced Computer Graphics;  University of Canterbury (2021)
-//
+//  Student Name: Yuezhang Zhu
+//  Student ID: 97245310
 //  FILE NAME: MeshViewer.cpp
 //  Triangle mesh viewer using OpenMesh and OpenGL-4
 //  This program assumes that the mesh consists of only triangles.
@@ -38,17 +39,17 @@ int num_Elems;
 bool wireframe = false;
 
 
-GLuint  NPRModeLoc;
-bool NPRMode = true;
+GLuint twoToneModeLoc;
+bool twoToneMode = true;
 
 GLuint creaseLoc;
-glm::vec2 creaseEdgeSize = glm::vec2(1, 1);
+glm::vec2 creaseEdgeSize = glm::vec2(1.0, 1.0);
 
 GLuint creaseThresholdLoc;
-float creaseThreshold = 20;
+float creaseThreshold = 20.0;
 
 GLuint silhoutteLoc;
-glm::vec2 silhoutteEdgeSize = glm::vec2(0, 4);
+glm::vec2 silhoutteEdgeSize = glm::vec2(0.0, 4.0);
 
 
 GLuint enableSilhoutteLoc;
@@ -58,12 +59,12 @@ GLuint enableCreaseLoc;
 bool enableCrease = true;
 
 GLuint minimizeEdgeGapLoc;
-float minimizeEdgeGap = 1;
+float minimizeEdgeGapFactor = 1.0;
 
 GLuint multiTextureLoc;
 bool multiTexture = true;
 
-float zoomLevel = 1;
+float zoomLevel = 1.0;
 
 int nverts = 200;
 bool meshSimple = false;
@@ -73,7 +74,7 @@ void loadTextures()
 {	
 	string textureDir = "./Textures/";
 	const char* textures[3][4] = {
-			{"pencil000_64.tga", "pencil000_32.tga", "pencil000_16.tga", "pencil000_8.tga"},
+			{"pencil0_64.tga", "pencil0_32.tga", "pencil0_16.tga", "pencil0_8.tga"},
 			{"pencil1_64.tga", "pencil1_32.tga", "pencil1_16.tga", "pencil1_8.tga"},
 			{"pencil2_64.tga", "pencil2_32.tga", "pencil2_16.tga", "pencil2_8.tga"},
 	};
@@ -150,7 +151,7 @@ void getBoundingBox(float& xmin, float& xmax, float& ymin, float& ymax, float& z
 
 
 
-void meshSimplification()
+void simplifyMesh()
 {
 	// Decimation Module Handle type
 	typedef OpenMesh::Decimater::DecimaterT< MyMesh > MyDecimater;
@@ -179,7 +180,7 @@ void initialize()
 	}
 
 	if (meshSimple) {
-		meshSimplification();
+		simplifyMesh();
 	}
 
 	getBoundingBox(xmin, xmax, ymin, ymax, zmin, zmax);
@@ -330,15 +331,14 @@ void initialize()
 	lgtLoc = glGetUniformLocation(program, "lightPos");
 
 	texLoc = glGetUniformLocation(program, "texSample");
-	NPRModeLoc = glGetUniformLocation(program, "NPRMode");
+	twoToneModeLoc = glGetUniformLocation(program, "twoToneMode");
 	creaseLoc = glGetUniformLocation(program, "creaseEdges");
 	silhoutteLoc = glGetUniformLocation(program, "silhoutteEdges");
-	creaseThresholdLoc = glGetUniformLocation(program, "creaseEdgeThreshold");
+	creaseThresholdLoc = glGetUniformLocation(program, "creaseThreshold");
 	enableSilhoutteLoc = glGetUniformLocation(program, "enableSilhoutte");
 	enableCreaseLoc = glGetUniformLocation(program, "enableCrease");
 	multiTextureLoc = glGetUniformLocation(program, "multiTexture");
-	minimizeEdgeGapLoc = glGetUniformLocation(program, "minimizeEdgeGap");
-
+	minimizeEdgeGapLoc = glGetUniformLocation(program, "minimizeEdgeGapFactor");
 
 
 	int texVals[3] = { 0, 1, 2 };
@@ -401,7 +401,7 @@ void keyboard(unsigned char key, int x, int y)
 	}
 	if (key == '2') {
 		meshSimple = !meshSimple;
-		//wireframe = true;
+		wireframe = true;
 		initialize();
 	}
 	if (wireframe) {
@@ -412,7 +412,7 @@ void keyboard(unsigned char key, int x, int y)
 	}
 
 	if (key == ' ') {
-		NPRMode = !NPRMode;
+		twoToneMode = !twoToneMode;
 	}
 	if (key == 'q') {
 		silhoutteEdgeSize[1] += 0.1;
@@ -433,10 +433,10 @@ void keyboard(unsigned char key, int x, int y)
 		creaseThreshold -= 1;
 	}
 	if (key == 'm') {
-		minimizeEdgeGap += 0.1;
+		minimizeEdgeGapFactor += 0.1;
 	}
 	if (key == 'n') {
-		minimizeEdgeGap -= 0.1;
+		minimizeEdgeGapFactor -= 0.1;
 	}
 	if (key == 'h') {
 		enableSilhoutte = !enableSilhoutte;
@@ -473,7 +473,7 @@ void display()
 	if (wireframe) glUniform1i(wireLoc, 1);
 	else		   glUniform1i(wireLoc, 0);
 
-	glUniform1i(NPRModeLoc, NPRMode);
+	glUniform1i(twoToneModeLoc, twoToneMode);
 
 	glUniform2fv(silhoutteLoc, 1, &silhoutteEdgeSize[0]);
 	glUniform2fv(creaseLoc, 1, &creaseEdgeSize[0]);
@@ -485,7 +485,7 @@ void display()
 	
 	glUniform1i(multiTextureLoc, multiTexture);
 
-	glUniform1f(minimizeEdgeGapLoc, minimizeEdgeGap);
+	glUniform1f(minimizeEdgeGapLoc, minimizeEdgeGapFactor);
 
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

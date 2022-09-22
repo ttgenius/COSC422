@@ -18,7 +18,7 @@ uniform vec2 silhoutteEdges;
 uniform float creaseThreshold;
 float T = cos(creaseThreshold * 3.14159  / 180.0);
 
-uniform float minimizeEdgeGap;
+uniform float minimizeEdgeGapFactor;
 
 in vec3 unitNormal[];
 
@@ -26,9 +26,8 @@ flat out int isEdgeVertex;
 out float diffTerm;  // l.n
 out vec2 texCoords;
 
-
 vec4 faceNormal;
-float thresh;
+
 
 vec4 getFaceNormal(int i1, int i2, int i3){
     vec3 v1 = gl_in[i1].gl_Position.xyz - gl_in[i3].gl_Position.xyz;
@@ -45,9 +44,9 @@ void drawSilhoutteEdge(vec4 a, vec4 b, vec4 n1, vec4 n2){
     float d1 = silhoutteEdges[0];
     float d2 = silhoutteEdges[1];
 
-
-    vec4 ab = minimizeEdgeGap * normalize(b - a);  // a to b
-    vec4 ba = minimizeEdgeGap * normalize(a - b);  // b to a
+    vec4 ab = minimizeEdgeGapFactor * normalize(b - a);  // a to b
+    vec4 ba = minimizeEdgeGapFactor * normalize(a - b);  // b to a
+    
     p1 = (a + ba) + d1 * v;
     p2 = (a + ba) + d2 * v;
     q1 = (b + ab) + d1 * v;
@@ -80,8 +79,8 @@ void drawCreaseEdge(vec4 a, vec4 b, vec4 n1, vec4 n2){
     float d1 = creaseEdges[0];
     float d2 = creaseEdges[1];
 
-    vec4 ab = minimizeEdgeGap * normalize(b - a);  // a to b
-    vec4 ba = minimizeEdgeGap * normalize(a - b);  // b to a
+    vec4 ab = minimizeEdgeGapFactor * normalize(b - a);  // a to b
+    vec4 ba = minimizeEdgeGapFactor * normalize(a - b);  // b to a
 
     vec4 p1 = (a + ba) + d1 * v + d2 * w;
     vec4 p2 = (a + ba) + d1 * v - d2 * w;
@@ -106,7 +105,7 @@ void drawCreaseEdge(vec4 a, vec4 b, vec4 n1, vec4 n2){
 }
 
 
-void drawEdge(int index){
+void computeEdge(int index){
     vec4 adjFaceNormal = getFaceNormal(index, (index + 1) % 6, (index + 2) % 6);
     if (enableSilhoutte) {
         if ((mvMatrix * faceNormal).z > 0 && (mvMatrix * adjFaceNormal).z < 0){
@@ -134,13 +133,13 @@ void main()
 	  diffTerm = max(dot(lgtVec, unitNormal[i]), 0.2);
 
 	  if (i == 0){
-			texCoords = vec2(0.0, 0.0);
+			texCoords = vec2(0.0, 1.0); // curvature aligns bettter than start from (0,0)
 	  }
 	  else if (i == 2) {
-			texCoords = vec2(1.0, 0.5);
+			texCoords = vec2(0.0, 0.0);
 	  } 
 	  else if (i == 4) {
-			texCoords = vec2(0.0, 1.0);
+			texCoords = vec2(1.0, 0.5);
 	  }
 	 
 	  isEdgeVertex = 0;
@@ -152,8 +151,6 @@ void main()
 
     for(int i = 0; i < gl_in.length(); i+=2)
     {
-      
-        drawEdge(i);
-        
+        computeEdge(i);     
     }
 }
