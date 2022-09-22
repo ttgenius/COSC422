@@ -38,7 +38,6 @@ glm::mat4 view, projView;
 int num_Elems;
 bool wireframe = false;
 
-
 GLuint twoToneModeLoc;
 bool twoToneMode = true;
 
@@ -50,7 +49,6 @@ float creaseThreshold = 20.0;
 
 GLuint silhoutteLoc;
 glm::vec2 silhoutteEdgeSize = glm::vec2(0.0, 4.0);
-
 
 GLuint enableSilhoutteLoc;
 bool enableSilhoutte = true;
@@ -496,10 +494,6 @@ void display()
 
 	glFlush();
 }
-
-
-
-
 
 
 int main(int argc, char** argv)

@@ -124,7 +124,7 @@ void computeEdge(int index){
 void main()
 {
 	faceNormal = getFaceNormal(0, 2, 4);
-    for (int i = 0; i < gl_in.length(); i += 2) //for each vertex in main triangle (every 2nd)
+    for (int i = 0; i < gl_in.length(); i += 2) //for every 2nd vertex in main triangle
 	{
 	  vec4 posn = gl_in[i].gl_Position;
 	  vec4 posnEye = mvMatrix * posn;
