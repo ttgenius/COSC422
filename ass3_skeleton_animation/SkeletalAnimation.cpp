@@ -8,10 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath> 
-#include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
 
@@ -27,6 +24,8 @@ using namespace std;
 #include "math.h"
 #include "stdlib.h"
 #include "stdio.h"
+
+#define GL_CLAMP_TO_EDGE 0x812F
 
 //----------Globals----------------------------
 const aiScene* scene = NULL;
@@ -47,6 +46,18 @@ float look_x = 2, look_y = 0, look_z = 20;    //"Look-at" point along -z directi
 float toRad = 3.14159265 / 180.0;     //Conversion from degrees to rad
 float angle = 0;
 float rotation = 0.1; //degree
+
+GLUquadric* q;
+float pig_angle = 0;
+float theta = 20.0;
+
+
+float lightPosn[4] = { -5, 10, 10, 1 };
+float shadowMat[16] = { lightPosn[1],0,0,0, -lightPosn[0],0,-lightPosn[2],-1,0,0,lightPosn[1],0, 0,0,0,lightPosn[1] };
+
+float cam_y = 1;
+float cam_x = 0;
+float cam_z = 10;
 
 
 void loadTexture(void)
@@ -121,13 +132,13 @@ void drawFloor()
 		for (int j = -100; j < 100; j += 10)
 		{
 			glTexCoord2f(0.0, 0.0);
-			glVertex3f(i, -0.1, j); //-0.1 so that the shadow can be seen clearly
+			glVertex3f(i, 0.01, j); //-0.1 so that the shadow can be seen clearly
 			glTexCoord2f(0.0, 1.0);
-			glVertex3f(i, -0.1, j + 10);
+			glVertex3f(i, 0.01, j + 10);
 			glTexCoord2f(1.0, 1.0);
-			glVertex3f(i + 10, -0.1, j + 10);
+			glVertex3f(i + 10, 0.01, j + 10);
 			glTexCoord2f(1.0, 0.0);
-			glVertex3f(i + 10, -0.1, j);
+			glVertex3f(i + 10, 0.01, j);
 		}
 	}
 	glEnd();
@@ -147,35 +158,38 @@ void skybox() {
 	// Back
 	glBindTexture(GL_TEXTURE_2D, txId[3]);
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0);		glVertex3f(-100.0, -100.0, -100.0);
-	glTexCoord2f(1.0, 0.0);		glVertex3f(100.0, -100.0, -100.0);
+	glTexCoord2f(0.0, 0.5);		glVertex3f(-100.0, 0, -100.0);
+	glTexCoord2f(1.0, 0.5);		glVertex3f(100.0, 0, -100.0);
 	glTexCoord2f(1.0, 1.0);		glVertex3f(100.0, 100.0, -100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(-100.0, 100.0, -100.0);
 	glEnd();
 	// Right
 	glBindTexture(GL_TEXTURE_2D, txId[4]);
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0);		glVertex3f(100.0, -100.0, -100.0);
-	glTexCoord2f(1.0, 0.0);		glVertex3f(100.0, -100.0, 100.0);
+	glTexCoord2f(0.0, 0.5);		glVertex3f(100.0, 0, -100.0);
+	glTexCoord2f(1.0, 0.5);		glVertex3f(100.0, 0, 100.0);
 	glTexCoord2f(1.0, 1.0);		glVertex3f(100.0, 100.0, 100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(100.0, 100.0, -100.0);
 	glEnd();
+	/*
 	// Front
 	glBindTexture(GL_TEXTURE_2D, txId[5]);
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0);		glVertex3f(100.0, -100.0, 100.0);
-	glTexCoord2f(1.0, 0.0);		glVertex3f(-100.0, -100.0, 100.0);
+	glTexCoord2f(0.0, 0.5);		glVertex3f(100.0, 0, 100.0);
+	glTexCoord2f(1.0, 0.5);		glVertex3f(-100.0, 0, 100.0);
 	glTexCoord2f(1.0, 1.0);		glVertex3f(-100.0, 100.0, 100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(100.0, 100.0, 100.0);
 	glEnd();
+	*/
 	// Left
 	glBindTexture(GL_TEXTURE_2D, txId[6]);
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0);		glVertex3f(-100.0, -100.0, 100.0);
-	glTexCoord2f(1.0, 0.0);		glVertex3f(-100.0, -100.0, -100.0);
+	glTexCoord2f(0.0, 0.5);		glVertex3f(-100.0, 0, 100.0);
+	glTexCoord2f(1.0, 0.5);		glVertex3f(-100.0, 0, -100.0);
 	glTexCoord2f(1.0, 1.0);		glVertex3f(-100.0, 100.0, -100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(-100.0, 100.0, 100.0);
 	glEnd();
+	/*
 	// Top
 	glBindTexture(GL_TEXTURE_2D, txId[7]);
 	glBegin(GL_QUADS);
@@ -184,14 +198,13 @@ void skybox() {
 	glTexCoord2f(1.0, 1.0);		glVertex3f(-100.0, 100.0, 100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(-100.0, 100.0, -100.0);
 	glEnd();
-
+	*/
 	glDisable(GL_TEXTURE_2D);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, white);
 	glPopMatrix();
 	glDisable(GL_BLEND);
 
 }
-
 
 //Cottage, a custom_buil model using coordinates and polygon definitions
 void drawRoof() {
@@ -204,35 +217,35 @@ void drawRoof() {
 
 	glNormal3f(0, 1, 1);
 	glTexCoord2f(0, 0);
-	glVertex3f(-50, 30, 20);
+	glVertex3f(-10, 6, 4);
 	glTexCoord2f(5, 0);
-	glVertex3f(50, 30, 20);
+	glVertex3f(10, 6, 4);
 	glTexCoord2f(2.5, 5);
-	glVertex3f(0, 60, 0);
+	glVertex3f(0, 12, 0);
 
 	glNormal3f(1, 1, 0);
 	glTexCoord2f(0, 0);
-	glVertex3f(50, 30, 20);
+	glVertex3f(10, 6, 4);
 	glTexCoord2f(5, 0);
-	glVertex3f(50, 30, -20);
+	glVertex3f(10, 6, -4);
 	glTexCoord2f(2.5, 5);
-	glVertex3f(0, 60, 0);
+	glVertex3f(0, 12, 0);
 
 	glNormal3f(0, 1, -1);
 	glTexCoord2f(0, 0);
-	glVertex3f(50, 30, -20);
+	glVertex3f(10, 6, -4);
 	glTexCoord2f(5, 0);
-	glVertex3f(-50, 30, -20);
+	glVertex3f(-10, 6, -4);
 	glTexCoord2f(2.5, 5);
-	glVertex3f(0, 60, 0);
+	glVertex3f(0, 12, 0);
 
 	glNormal3f(-1, 1, 0);
 	glTexCoord2f(0, 0);
-	glVertex3f(-50, 30, -20);
+	glVertex3f(-10, 6, -4);
 	glTexCoord2f(5, 0);
-	glVertex3f(-50, 30, 20);
+	glVertex3f(-10, 6, 4);
 	glTexCoord2f(2.5, 5);
-	glVertex3f(0, 60, 0);
+	glVertex3f(0, 12, 0);
 
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
@@ -248,83 +261,83 @@ void drawWalls() {
 
 	glNormal3f(0, 0, 1);                  //front side left of the door
 	glTexCoord2f(0, 0);
-	glVertex3f(-50, 0, 20);
+	glVertex3f(-10, 0, 4);
 	glTexCoord2f(1, 0);
-	glVertex3f(-5, 0, 20);
+	glVertex3f(-1, 0, 4);
 	glTexCoord2f(1, 1);
-	glVertex3f(-5, 30, 20);
+	glVertex3f(-1, 6, 4);
 	glTexCoord2f(0, 1);
-	glVertex3f(-50, 30, 20);
+	glVertex3f(-10, 6, 4);
 
 	glNormal3f(0, 0, 1);                 //above the door
 	glTexCoord2f(0, 0);
-	glVertex3f(-5, 15, 20);
+	glVertex3f(-1, 3, 4);
 	glTexCoord2f(0.22, 0);
-	glVertex3f(5, 15, 20);
+	glVertex3f(1, 3, 4);
 	glTexCoord2f(0.22, 0.5);
-	glVertex3f(5, 30, 20);
+	glVertex3f(1, 6, 4);
 	glTexCoord2f(0, 0.5);
-	glVertex3f(-5, 30, 20);
+	glVertex3f(-1, 6, 4);
 
 	glNormal3f(0, 0, 1);                  //right of the door
 	glTexCoord2f(0, 0);
-	glVertex3f(5, 0, 20);
+	glVertex3f(1, 0, 4);
 	glTexCoord2f(1, 0);
-	glVertex3f(50, 0, 20);
+	glVertex3f(10, 0, 4);
 	glTexCoord2f(1, 1);
-	glVertex3f(50, 30, 20);
+	glVertex3f(10, 6, 4);
 	glTexCoord2f(0, 1);
-	glVertex3f(5, 30, 20);
+	glVertex3f(1, 6, 4);
 
 	glNormal3f(1, 0, 0);                   //right side
 	glTexCoord2f(0, 0);
-	glVertex3f(50, 0, 20);
+	glVertex3f(10, 0, 4);
 	glTexCoord2f(1, 0);
-	glVertex3f(50, 0, -20);
+	glVertex3f(10, 0, -4);
 	glTexCoord2f(1, 1);
-	glVertex3f(50, 30, -20);
+	glVertex3f(10, 6, -4);
 	glTexCoord2f(0, 1);
-	glVertex3f(50, 30, 20);
+	glVertex3f(10, 6, 4);
 
 	glNormal3f(0, 0, -1);                  //backside left of the door
 	glTexCoord2f(0, 0);
-	glVertex3f(-50, 0, -20);
+	glVertex3f(-10, 0, -4);
 	glTexCoord2f(1, 0);
-	glVertex3f(-5, 0, -20);
+	glVertex3f(-1, 0, -4);
 	glTexCoord2f(1, 1);
-	glVertex3f(-5, 30, -20);
+	glVertex3f(-1, 6, -4);
 	glTexCoord2f(0, 1);
-	glVertex3f(-50, 30, -20);
+	glVertex3f(-10, 6, -4);
 
 	glNormal3f(0, 0, -1);                 //above the door
 	glTexCoord2f(0, 0);
-	glVertex3f(-5, 15, -20);
+	glVertex3f(-1, 3, -4);
 	glTexCoord2f(1, 0);
-	glVertex3f(5, 15, -20);
+	glVertex3f(1, 3, -4);
 	glTexCoord2f(1, 1);
-	glVertex3f(5, 30, -20);
+	glVertex3f(1, 6, -4);
 	glTexCoord2f(0, 1);
-	glVertex3f(-5, 30, -20);
+	glVertex3f(-1, 6, -4);
 
 	glNormal3f(0, 0, -1);                  //right of the door
 	glTexCoord2f(0, 0);
-	glVertex3f(5, 0, -20);
+	glVertex3f(1, 0, -4);
 	glTexCoord2f(1, 0);
-	glVertex3f(50, 0, -20);
+	glVertex3f(10, 0, -4);
 	glTexCoord2f(1, 1);
-	glVertex3f(50, 30, -20);
+	glVertex3f(10, 6, -4);
 	glTexCoord2f(0, 1);
-	glVertex3f(5, 30, -20);
+	glVertex3f(1, 6, -4);
 
 	glNormal3f(-1, 0, 0);
 	glTexCoord2f(0, 0);
-	glVertex3f(-50, 0, 20);
+	glVertex3f(-10, 0, 4);
 	glTexCoord2f(1, 0);
-	glVertex3f(-50, 0, -20);
+	glVertex3f(-10, 0, -4);
 	glTexCoord2f(1, 1);
-	glVertex3f(-50, 30, -20);
+	glVertex3f(-10, 6, -4);
 	glTexCoord2f(0, 1);
-	glVertex3f(-50, 30, 20);
+	glVertex3f(-10, 6, 4);
 
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
@@ -340,6 +353,118 @@ void drawHouse() {
 
 }
 
+
+void drawPig()
+{
+	glColor3f(1, 0.7529, 0.7961);
+	glPushMatrix();                          //body
+	glColor3f(1, 0.7529, 0.7961);
+	glTranslatef(30.0, 4, 0.0);
+	glRotatef(-90.0, 0., 1., 0.);
+	gluCylinder(q, 2.0, 2.0, 4, 20, 5);
+	glTranslatef(0.0, 0.0, 4);
+	gluDisk(q, 0.0, 2.0, 20, 4);
+	glTranslatef(0.0, 0.0, -4);
+	gluDisk(q, 0.0, 2.0, 20, 4);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(25, 4, 0.0);                  //head
+	glutSolidSphere(1.5, 20, 20);
+	glPopMatrix();
+
+	glPushMatrix();                          //legs
+	glTranslatef(27, 1, 0.5);
+	glScalef(0.5, 2, 0.5);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();                          //legs
+	glColor3f(1, 0.7529, 0.7961);
+	glTranslatef(27, 1, -0.5);
+	glScalef(0.5, 2, 0.5);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();                          //legs
+	glTranslatef(29.5, 1, 0.5);
+	glScalef(0.5, 2, 0.5);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();                          //legs
+	glTranslatef(29.5, 1, -0.5);
+	glScalef(0.5, 2, 0.5);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();                          //tail
+	glTranslatef(30, 4, 0);
+	glRotatef(theta, 0, 1, 0);
+	glRotatef(-90, 0, 0, 1);
+	glScalef(0.5, 3, 0.5);
+	glutSolidCube(1);
+	glPopMatrix();
+
+}
+
+
+void drawSheep() {
+	glColor3f(1, 1, 1);
+	glPushMatrix();                          //body
+	glTranslatef(-26, 4, 0.0);
+glRotatef(-90.0, 0., 1., 0.);
+gluCylinder(q, 2.0, 2.0, 4, 20, 5);
+glTranslatef(0.0, 0.0, 4);
+gluDisk(q, 0.0, 2.0, 20, 4);
+glTranslatef(0.0, 0.0, -4);
+gluDisk(q, 0.0, 2.0, 20, 4);
+glPopMatrix();
+
+glPushMatrix();
+glTranslatef(-25, 5, 0.0);
+glutSolidCube(2);                         //head                   
+glPopMatrix();
+
+glPushMatrix();                          //legs
+glTranslatef(-27, 1, 0.5);
+glScalef(0.5, 2, 0.5);
+glutSolidCube(1);
+glPopMatrix();
+
+glPushMatrix();                          //legs
+glTranslatef(-27, 1, -0.5);
+glScalef(0.5, 2, 0.5);
+glutSolidCube(1);
+glPopMatrix();
+
+glPushMatrix();                          //leg
+glTranslatef(-29.5, 1, 0.5);
+glScalef(0.5, 2, 0.5);
+glutSolidCube(1);
+glPopMatrix();
+
+glPushMatrix();                          //leg
+glTranslatef(-29.5, 1, -0.5);
+glScalef(0.5, 2, 0.5);
+glutSolidCube(1);
+glPopMatrix();
+
+glPushMatrix();                          //tail
+glTranslatef(-30, 4, 0);
+glRotatef(theta, 0, 1, 0);
+glRotatef(-90, 0, 0, 1);
+glScalef(0.5, 3, 0.5);
+glutSolidCube(1);
+glPopMatrix();
+
+}
+
+
+
+
+
+
 // ------A recursive function to traverse scene graph and render each mesh----------
 // Simplified version for rendering a skeleton mesh
 void render(const aiNode* node)
@@ -353,7 +478,8 @@ void render(const aiNode* node)
 	m.Transpose();   //Convert to column-major order
 	glPushMatrix();
 	glMultMatrixf((float*)&m);   //Multiply by the transformation matrix for this node
-	
+
+	/*
 	if (node->mName == aiString("Hips")) {
 		glPushMatrix();
 		glRotatef(11.66, 0, 0, 1);
@@ -361,8 +487,10 @@ void render(const aiNode* node)
 		glutSolidCube(1);
 		glPopMatrix();
 	}
-	/*
-	if ((strcmp((node->mName).data, "Chest") == 0))
+	*/
+
+
+	if ((node->mName) == aiString("Chest"))
 	{
 		glPushMatrix();
 		glTranslatef(0, 7, 0);
@@ -370,22 +498,28 @@ void render(const aiNode* node)
 		glutSolidCube(1);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "Hips") == 0))
+	else if ((node->mName) == aiString("Hips"))
 	{
 		glPushMatrix();
 		glScalef(14, 4, 4);
 		glutSolidCube(1);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "RightCollar") == 0) || (strcmp((node->mName).data, "LeftCollar") == 0))
+	else if ((node->mName) == aiString("RightCollar"))
 	{
-		int side = (strcmp((node->mName).data, "RightCollar") == 0) ? -1 : 1;
 		glPushMatrix();
-		glTranslatef(side * 7, 0, 0);
+		glTranslatef(7, 0, 0);
 		glutSolidSphere(3, 20, 20);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "RightUpLeg") == 0) || (strcmp((node->mName).data, "LeftUpLeg") == 0))
+	else if ((node->mName) == aiString("LeftCollar"))
+	{
+		glPushMatrix();
+		glTranslatef(-7, 0, 0);
+		glutSolidSphere(3, 20, 20);
+		glPopMatrix();
+	}
+	else if (((node->mName) == aiString("RightUpLeg")) || ((node->mName) == aiString("LeftUpLeg")))
 	{
 		glPushMatrix();
 		glTranslatef(0, -9, 0);
@@ -398,7 +532,7 @@ void render(const aiNode* node)
 		glutSolidSphere(3, 20, 20);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "RightLowLeg") == 0) || (strcmp((node->mName).data, "LeftLowLeg") == 0))
+	else if (((node->mName) == aiString("RightLowLeg")) || ((node->mName) == aiString("LeftLowLeg")))
 	{
 		glPushMatrix();
 		glTranslatef(0, -9, 0);
@@ -406,12 +540,12 @@ void render(const aiNode* node)
 		glutSolidCube(1);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "RightFoot") == 0) || (strcmp((node->mName).data, "LeftFoot") == 0))
+	else if (((node->mName) == aiString("RightFoot")) || ((node->mName) == aiString("LeftFoot")))
 	{
 		
 			//Calculates the world coordinates of the Right Foot
 		
-		if (strcmp((node->mName).data, "RightFoot") == 0)
+		if ((node->mName) == aiString("RightFoot"))
 		{
 			aiNode* parent = node->mParent;
 			aiMatrix4x4 matrices[4];
@@ -436,7 +570,7 @@ void render(const aiNode* node)
 		glutSolidCube(1);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "RightUpArm") == 0) || (strcmp((node->mName).data, "LeftUpArm") == 0))
+	else if (((node->mName) == aiString("RightUpArm")) || ((node->mName) == aiString("LeftUpArm")))
 	{
 		glPushMatrix();
 		glTranslatef(0, -6.5, 0);
@@ -449,7 +583,7 @@ void render(const aiNode* node)
 		glutSolidSphere(3, 20, 20);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "RightHand") == 0) || (strcmp((node->mName).data, "LeftHand") == 0))
+	else if (((node->mName) == aiString("RightHand")) || ((node->mName) == aiString("LeftHand")))
 	{
 		glPushMatrix();
 		glTranslatef(0, 0, 0);
@@ -462,7 +596,7 @@ void render(const aiNode* node)
 		glutSolidSphere(3, 20, 20);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "Neck") == 0))
+	else if (((node->mName) == aiString("Neck")))
 	{
 		glPushMatrix();
 		glTranslatef(0, 3, 0);
@@ -470,15 +604,24 @@ void render(const aiNode* node)
 		glutSolidCylinder(1.5, 5, 50, 10);
 		glPopMatrix();
 	}
-	else if ((strcmp((node->mName).data, "Head") == 0))
+	else if (((node->mName) == aiString("Head")))
 	{
+	 
+	    glPushMatrix();
+		glColor4f(1, 0.7529, 0.7961, 1);  // a pink hat
+		glTranslatef(0, 6, 0);
+		glRotatef(-90, 1, 0, 0);
+		glutSolidCone(10, 5, 20, 20);
+		glPopMatrix();
+		
+
 		glPushMatrix();
 		glTranslatef(0, 2, 0);
 		glutSolidSphere(5, 20, 20);
 		glPopMatrix();
 	}
-	*/
 	
+	/*
 	//The scene graph for a skeleton contains at most one mesh per node
 	//Skeleton meshes are always triangle meshes
 	else {
@@ -503,6 +646,7 @@ void render(const aiNode* node)
 			}
 		}
 	}
+	*/
 	// Recursively draw all children of the current node
 	for (int i = 0; i < node->mNumChildren; i++)
 		render(node->mChildren[i]);
@@ -564,12 +708,17 @@ void update(int tick) {
 	glutPostRedisplay();
 }
 
+
+
 //--------------------OpenGL initialization------------------------
 void initialise()
 {
 	float ambient[4] = { 0.2, 0.2, 0.2, 1.0 };  //Ambient light
 	float white[4] = { 1, 1, 1, 1 };		    //Light's colour
 	float black[4] = { 0, 0, 0, 1 };
+
+	q = gluNewQuadric();
+
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
@@ -585,7 +734,7 @@ void initialise()
 	gluPerspective(40, 1, 1.0, 500.0);
 
 	//---- Load the model ------
-	scene = aiImportFile("Walk.bvh", aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Debone);
+	scene = aiImportFile("Dance.bvh", aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Debone);
 
 	anim = scene->mAnimations[0];
 	fps = anim->mTicksPerSecond;
@@ -634,7 +783,7 @@ void special(int key, int x, int y)
 //------The main display function---------
 void display()
 {
-	float lightPosn[4] = { -5, 10, 10, 1 };
+	//float lightPosn[4] = { -5, 10, 10, 1 };
 	aiMatrix4x4 m = scene->mRootNode->mTransformation;
 	float xpos = m.a4;   //Root joint's position in world space
 	float ypos = m.b4;
@@ -644,26 +793,50 @@ void display()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	//gluLookAt(0, 0, 7, 0, 0, 0, 0, 1, 0);
-	gluLookAt(eye_x, eye_y, eye_z, 0, 0, 0, 0, 1, 0);
+	gluLookAt(cam_x, cam_y, cam_z, 0, cam_y, 0, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	
-	//glDisable(GL_LIGHTING);
-	//drawFloor();
-	//skybox();
-	//glEnable(GL_LIGHTING);
+	glDisable(GL_LIGHTING);
+	drawFloor();
+	skybox();
+	glEnable(GL_LIGHTING);
+	
 	
 	glPushMatrix();
 	   glScalef(scene_scale, scene_scale, scene_scale);
 	   glTranslatef(-xpos, 0, -zpos);   //Move model to origin
 	   render(scene->mRootNode);
 	glPopMatrix();
+	
 
-	/*
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+
+	glPushMatrix();
+	glTranslatef(0, 0.05, 0);
+	glMultMatrixf(shadowMat);
+	glScalef(scene_scale, scene_scale, scene_scale);  //robot shadow
+	glTranslatef(-xpos, 0, -zpos);
+	glColor4f(0.1, 0.1, 0.1, 1);
+	render(scene->mRootNode);
+	glColor4f(0.1, 0.1, 0.1, 1);
+	glPopMatrix();
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+
+	
 	glPushMatrix();              //cottage
-		glTranslatef(0, 0, -100);
+		glTranslatef(0, 0, -25);
 		drawHouse();
 	glPopMatrix();
-	*/
+
+
+	glPushMatrix();              
+		glTranslatef(4, 0, -zpos);
+		drawPig();
+	glPopMatrix();
+
 
 	glutSwapBuffers();
 }
