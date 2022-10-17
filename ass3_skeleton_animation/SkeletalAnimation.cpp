@@ -38,11 +38,12 @@ int tick = 0;
 float fps;
 int timeStep;
 
-aiVector3D footVec;
-GLuint txId[9];  //Texture ID
+aiVector3D rightfootVec;
+aiVector3D headVec;
 
-//float  eye_x = 0, eye_y = 0, eye_z = 7;    //Initial camera position
-//float look_x = 2, look_y = 0, look_z = 20;    //"Look-at" point along -z direction
+GLuint txId[7];  //Texture ID
+
+
 float toRad = 3.14159265 / 180.0;     //Conversion from degrees to rad
 float angle = 0;
 
@@ -51,10 +52,10 @@ float CDR = PI / 180.0;
 
 GLUquadric* q;
 float pig_angle = 0;
-float theta = 20.0;
+float tail_angle = 0.0;
 float jump = 0;
 int direction = 1;
-float t = 0;
+float animal_tick = 0;
 
 float lightPosn[4] = { -5, 10, 10, 1 };
 float shadowMat[16] = { lightPosn[1],0,0,0, -lightPosn[0],0,-lightPosn[2],-1,0,0,lightPosn[1],0, 0,0,0,lightPosn[1] };
@@ -62,30 +63,34 @@ float shadowMat[16] = { lightPosn[1],0,0,0, -lightPosn[0],0,-lightPosn[2],-1,0,0
 float cam_y = 1;
 float cam_x = 0;
 float cam_z = 10;
-float camera_movement_speed = 1;
-float camera_rotation_speed = 3;
-float view_angle = 0;
+float cam_move_speed = 1;
+float cam_rotation_speed = 3;
+float cam_angle = 0;
 
 
-float ball_x = -0.3;
-float ball_y = 0.2;
-float ball_z = 0.6;
-
-
-float ball_time = 0;
 float ball_velocity = 10;
-float ball_vx = ball_velocity * cos(45 * CDR) * cos(45 * CDR);;
-float ball_vy = ball_velocity * sin(45 * CDR) * cos(45 * CDR);;
-float ball_vz = ball_velocity * cos(45 * CDR);
 float gravity = 9.81;
 bool ballReset = false;
-bool ballKicked = false;
+bool rightBallKicked = false;
+
+float right_ball_x = -0.4;
+float right_ball_y = 0.2;
+float right_ball_z = 0.6;
+
+float right_ball_vx = ball_velocity * cos(45 * CDR) * cos(45 * CDR);;
+float right_ball_vy = ball_velocity * sin(45 * CDR) * cos(45 * CDR);;
+float right_ball_vz = ball_velocity * cos(45 * CDR);
+
+float head_ball_x = 0;
+float head_ball_y = 2.25;
+float head_ball_z = 0.2;
+
 
 bool pause = false;
 
 void loadTexture(void)
 {
-	glGenTextures(9, txId); 	// Create texture ids
+	glGenTextures(7, txId); 	// Create texture ids
 
 	glBindTexture(GL_TEXTURE_2D, txId[0]);  //Use this texture
 	loadBMP("ground.bmp");
@@ -125,13 +130,6 @@ void loadTexture(void)
 
 	glBindTexture(GL_TEXTURE_2D, txId[6]);  //Use this texture
 	loadTGA("organic_lf.tga");
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	glBindTexture(GL_TEXTURE_2D, txId[7]);  //Use this texture
-	loadTGA("organic_up.tga");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -194,7 +192,7 @@ void skybox() {
 	glTexCoord2f(1.0, 1.0);		glVertex3f(100.0, 100.0, 100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(100.0, 100.0, -100.0);
 	glEnd();
-	/*
+	
 	// Front
 	glBindTexture(GL_TEXTURE_2D, txId[5]);
 	glBegin(GL_QUADS);
@@ -203,7 +201,7 @@ void skybox() {
 	glTexCoord2f(1.0, 1.0);		glVertex3f(-100.0, 100.0, 100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(100.0, 100.0, 100.0);
 	glEnd();
-	*/
+	
 	// Left
 	glBindTexture(GL_TEXTURE_2D, txId[6]);
 	glBegin(GL_QUADS);
@@ -212,16 +210,8 @@ void skybox() {
 	glTexCoord2f(1.0, 1.0);		glVertex3f(-100.0, 100.0, -100.0);
 	glTexCoord2f(0.0, 1.0);		glVertex3f(-100.0, 100.0, 100.0);
 	glEnd();
-	/*
-	// Top
-	glBindTexture(GL_TEXTURE_2D, txId[7]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0);		glVertex3f(100.0, 100.0, -100.0);
-	glTexCoord2f(1.0, 0.0);		glVertex3f(100.0, 100.0, 100.0);
-	glTexCoord2f(1.0, 1.0);		glVertex3f(-100.0, 100.0, 100.0);
-	glTexCoord2f(0.0, 1.0);		glVertex3f(-100.0, 100.0, -100.0);
-	glEnd();
-	*/
+	
+	
 	glDisable(GL_TEXTURE_2D);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, white);
 	glPopMatrix();
@@ -392,7 +382,7 @@ void drawPig()
 	glPopMatrix();
 
 	glPushMatrix();
-	glTranslatef(25, 4, 0.0);                  //head
+	glTranslatef(25, 4, 0.0);             //head
 	glutSolidSphere(1.5, 20, 20);
 	glPopMatrix();
 
@@ -423,9 +413,9 @@ void drawPig()
 
 	glPushMatrix();                          //tail
 	glTranslatef(30, 4, 0);
-	glRotatef(theta, 0, 1, 0);
+	glRotatef(tail_angle, 0, 1, 0);
 	glRotatef(-90, 0, 0, 1);
-	glScalef(0.5, 3, 0.5);
+	glScalef(0.8, 3, 0.6);
 	glutSolidCube(1);
 	glPopMatrix();
 
@@ -433,7 +423,10 @@ void drawPig()
 
 
 void drawSheep() {
-	glColor3f(1, 1, 1);
+	//glColor3f(0.7451, 0.7451, 0.7451);
+	//glColor3f(0.8235, 0.7216, 0.5294);
+	//glColor3f(1, 0.98, 0.5);
+	glColor3f(0.5882, 0.5882, 0.5882);
 	glPushMatrix();                          //body
 	glTranslatef(-26, 4, 0.0);
 	glRotatef(-90.0, 0., 1., 0.);
@@ -475,13 +468,12 @@ void drawSheep() {
 
 	glPushMatrix();                          //tail
 	glTranslatef(-30, 4, 0);
-	glRotatef(theta, 0, 1, 0);
+	glRotatef(tail_angle, 0, 1, 0);
 	glRotatef(-90, 0, 0, 1);
-	glScalef(0.5, 3, 0.5);
+	glScalef(0.8, 3, 0.6);
 	glutSolidCube(1);
 	glPopMatrix();
-
-	}
+}
 
 
 
@@ -571,8 +563,8 @@ void render(const aiNode* node)
 			{
 				worldMatrix *= matrices[i];
 			}
-			footVec = aiVector3D(0, 0, 0);
-			footVec *= worldMatrix;
+			rightfootVec = aiVector3D(0, 0, 0);
+			rightfootVec *= worldMatrix;
 		}
 		glPushMatrix();
 		glTranslatef(0, -1.5, 2);
@@ -594,7 +586,7 @@ void render(const aiNode* node)
 		glPopMatrix();
 	}
 	else if (((node->mName) == aiString("RightHand")) || ((node->mName) == aiString("LeftHand")))
-	{
+	{ 
 		glPushMatrix();
 		glTranslatef(0, 0, 0);
 		glScalef(2.5, 14, 2.5);
@@ -616,6 +608,22 @@ void render(const aiNode* node)
 	}
 	else if (((node->mName) == aiString("Head")))
 	{
+		aiNode* parent = node->mParent;
+		aiMatrix4x4 matrices[4];
+		matrices[3] = node->mTransformation;
+		int index = 2;
+		while (parent != NULL) {
+			matrices[index] = parent->mTransformation;
+			parent = parent->mParent;
+			index--;
+		}
+		aiMatrix4x4 worldMatrix = matrices[0];
+		for (int i = 1; i < 4; i++)
+		{
+			worldMatrix *= matrices[i];
+		}
+		headVec = aiVector3D(0, 0, 0);
+		headVec *= worldMatrix;
 	   
 	    glPushMatrix();
 		//glColor4f(1, 0.7529, 0.7961, 1);  // a pink hat
@@ -713,24 +721,24 @@ void updateNodeMatrices(int tick)
 
 void kickBall()
 {
-	if (ball_y > 0.2)
+	if (right_ball_y > 0.2)
 	{
-		ball_x -= ball_vx / 1000 * timeStep;
-		ball_y += ball_vy / 1000 * timeStep;
-		ball_z += ball_vz / 1000 * timeStep;
-		ball_vy -= gravity / 1000 * timeStep;
+		right_ball_x -= right_ball_vx / 1000 * timeStep;
+		right_ball_y += right_ball_vy / 1000 * timeStep;
+		right_ball_z += right_ball_vz / 1000 * timeStep;
+		right_ball_vy -= gravity / 1000 * timeStep;
 	}
 	else if (ballReset)
 	{
-		ball_x = -0.3;
-		ball_y = 0.2;
-		ball_z = 0.6;
+		right_ball_x = -0.4;
+		right_ball_y = 0.2;
+		right_ball_z = 0.6;
 
-		ball_vx = ball_velocity * cos(45 * CDR) * cos(45 * CDR);
-		ball_vy = ball_velocity * sin(45 * CDR) * cos(45 * CDR);
-		ball_vz = ball_velocity * cos(45 * CDR);
+		right_ball_vx = ball_velocity * cos(45 * CDR) * cos(45 * CDR);
+		right_ball_vy = ball_velocity * sin(45 * CDR) * cos(45 * CDR);
+		right_ball_vz = ball_velocity * cos(45 * CDR);
 
-		ballKicked = false;
+		rightBallKicked = false;
 		ballReset = false;
 	}
 }
@@ -748,13 +756,19 @@ void update(int value) {
 			updateNodeMatrices(tick);
 			tick++;
 
-			if ((footVec.x * scene_scale) <= ball_x + 0.2 && (footVec.z * scene_scale) >= ball_z - 0.2 && !ballKicked) {
-				ballKicked = true;
-				//ballReset = false;
+			if ((rightfootVec.x * scene_scale) <= right_ball_x + 0.2 && (rightfootVec.z * scene_scale) >= right_ball_z - 0.2 && !rightBallKicked) {
+				rightBallKicked = true;
 			}
-			if (ballKicked) {
+			if (rightBallKicked) {
 				kickBall();
 			}
+			//cout << "x"<< headVec.x << endl;
+			//cout << "y" << headVec.y << endl;
+			//cout << "z" << headVec.z << endl;
+			//cout << "scale" << scene_scale << endl;
+			head_ball_x = headVec.x * scene_scale;
+			head_ball_y = (18.5+headVec.y) * scene_scale;
+			head_ball_z = headVec.z * scene_scale;
 		}
 
 		glutTimerFunc(timeStep, update, tick);
@@ -767,26 +781,7 @@ void update(int value) {
 }
 
 
-void main_timer(int value)
-{
-	if (!pause) {
-		if (theta == 20) {
-			direction = -1;
-		}
-		if (theta == -20) {
-			direction = 1;
-		}
-		theta += direction;
-
-		t += 0.01;
-	}
-	glutTimerFunc(20, main_timer, 0);
-	glutPostRedisplay();
-
-}
-
-
-void animal_timer(int value)
+void animal_rotate_timer(int value)
 {
 	if (!pause) {
 		if (pig_angle < 360) {
@@ -795,45 +790,32 @@ void animal_timer(int value)
 		else {
 			pig_angle = 0;
 		}
+	}
 
-		if (jump == 5) {
+	glutTimerFunc(80, animal_rotate_timer, 0);
+	glutPostRedisplay();
+}
+
+
+
+
+void animal_tail_timer(int value)
+{
+	if (!pause) {
+		if (tail_angle == 45) {
 			direction = -1;
 		}
-		if (jump == 0) {
+		if (tail_angle == -45) {
 			direction = 1;
 		}
-		jump += direction;
+
+		tail_angle += direction;
+
+		animal_tick += 0.01;
 	}
-	glutTimerFunc(100, animal_timer, 0);
+	glutTimerFunc(20, animal_tail_timer, 0);
 	glutPostRedisplay();
 
-
-}
-
-// Camera rotation
-void cameraRotation(int direction) {
-	view_angle += direction * camera_rotation_speed;
-
-	if (view_angle >= 360) {
-		view_angle = 0;
-	}
-	else if (view_angle <= 0) {
-		view_angle = 360;
-	}
-}
-
-// Camera zoom
-void cameraZoom(int direction) {
-	//cout << cam_z << endl;
-	cam_z += direction * camera_movement_speed;
-
-	if (cam_z <= 2) {
-		cam_z = 2;
-	}
-
-	if (cam_z >= 90) {
-		cam_z = 90;
-	}
 }
 
 
@@ -841,16 +823,28 @@ void cameraZoom(int direction) {
 void special(int key, int x, int y)
 {
 	if (key == GLUT_KEY_UP) {
-		cameraZoom(-1);
+		cam_z -= cam_move_speed;
+		if (cam_z <= 2) {
+			cam_z = 2;
+		};
 	}
 	else if (key == GLUT_KEY_DOWN) {
-		cameraZoom(1);
+		cam_z += cam_move_speed;
+		if (cam_z >= 99) {
+			cam_z = 99;
+		}
 	}
 	else if (key == GLUT_KEY_LEFT) {
-		cameraRotation(1);
+		cam_angle += cam_rotation_speed;
+		if (cam_angle >= 360) {
+			cam_angle = 0;
+		}
 	}
 	else if (key == GLUT_KEY_RIGHT) {
-		cameraRotation(-1);
+		cam_angle -= cam_rotation_speed;
+		if (cam_z >= 99) {
+			cam_z = 99;
+		}
 	}
 	glutPostRedisplay();
 
@@ -914,15 +908,15 @@ void initialise()
 }
 
 
-void drawBall() {
+void drawBall(float ball_x, float ball_y, float ball_z) {
 	glPushMatrix();
-	glColor3f(1, 0, 0);
+	glColor3f(0.8784, 1, 1);
 	glTranslatef(ball_x, ball_y, ball_z);
 	glutSolidSphere(0.1, 20, 20);
 	glPopMatrix();
 }
 
-void drawBallShadow()
+void drawBallShadow(float ball_x, float ball_y, float ball_z)
 {
 
 	glDisable(GL_LIGHTING);
@@ -949,6 +943,7 @@ void drawRobot() {
 	glScalef(scene_scale, scene_scale, scene_scale);
 	//glTranslatef(-xpos, 0, -zpos);   //Move model to origin
 	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
+	//glColor4f(0.5, 0.5, 0, 1);
 	render(scene->mRootNode);
 	glPopMatrix();
 }
@@ -985,26 +980,28 @@ void display()
 	gluLookAt(cam_x, cam_y, cam_z, 0, cam_y, 0, 0, 1, 0);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	
+	
+	
+	glPushMatrix();
+	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
+	glRotatef(cam_angle, 0, 1, 0);
+	glTranslatef(scene_center.x, scene_center.y, scene_center.z);
+
 	glDisable(GL_LIGHTING);
 	drawFloor();
 	skybox();
 	glEnable(GL_LIGHTING);
 	
-	glPushMatrix();
-	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
-	glRotatef(view_angle, 0, 1, 0);
-	glTranslatef(scene_center.x, scene_center.y, scene_center.z);
-	
 		drawRobot();
 		drawRobotShadow();
-		drawBall();
-		drawBallShadow();
 		
-
-	
+		drawBall(right_ball_x, right_ball_y, right_ball_z);
+		drawBallShadow(right_ball_x, right_ball_y, right_ball_z);
+		
+		drawBall(head_ball_x, head_ball_y, head_ball_z);
+		drawBallShadow(head_ball_x, head_ball_y, head_ball_z);
+		
 		glPushMatrix();              //cottage
-			//glTranslatef(-30, 0, -80);
-			//glRotatef(22, 0, 1, 0);
 		glTranslatef(0, 0, -80);
 		glScalef(1.5, 1.5, 1.5);
 		drawHouse();
@@ -1014,34 +1011,26 @@ void display()
 			for (int j = 0;j <= 2;j++) {
 				glPushMatrix();
 				glTranslatef(5 * i, 0, -10 * j);
-				glTranslatef(30, 4, 0);
+				glTranslatef(6, 0.2, 0);
 				glRotatef(-pig_angle, 0, 1, 0);
-				glTranslatef(-30, -4, 0);
+				glTranslatef(-6, -0.2, 0); //30*0.2, -4*0.2
 				glScalef(0.2, 0.2, 0.2);
 				drawPig();
 				glPopMatrix();
 			}
 		}
 
-		for (int i = 0; i <= 2;i++) {                //whitie sheeps  
+		for (int i = 0; i <= 2;i++) {                //grey sheeps  
 			for (int j = 0;j <= 2;j++) {
 				glPushMatrix();
-				glTranslatef(-5 * i, jump, -10 * j);
+				glTranslatef(-5 * i, 0, -10 * j);
 				glScalef(0.2, 0.2, 0.2);
 				drawSheep();
 				glPopMatrix();
 			}
 		}
 
-
-		/*
-		glPushMatrix();              
-			glTranslatef(4, 0, -20); //pig
-			glScalef(0.2, 0.2, 0.2);
-			drawPig();
 		glPopMatrix();
-	*/
-	glPopMatrix();
 
 	glutSwapBuffers();
 }
@@ -1059,8 +1048,8 @@ int main(int argc, char** argv)
 	glutSpecialFunc(special);
 	glutKeyboardFunc(keyboard);
 	glutTimerFunc(timeStep, update, 0);
-	glutTimerFunc(20, main_timer, 0);
-	glutTimerFunc(80, animal_timer, 0);
+	glutTimerFunc(20, animal_tail_timer, 0);
+	glutTimerFunc(80, animal_rotate_timer, 0);
 	glutMainLoop();
 
 	aiReleaseImport(scene);
