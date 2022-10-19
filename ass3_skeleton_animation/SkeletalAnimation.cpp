@@ -69,6 +69,7 @@ float cam_angle = 0;
 
 
 float ball_velocity = 10;
+float velocity_scale_factor = 1000;
 float gravity = 9.81;
 bool ballReset = false;
 bool rightBallKicked = false;
@@ -93,43 +94,43 @@ void loadTexture(void)
 	glGenTextures(7, txId); 	// Create texture ids
 
 	glBindTexture(GL_TEXTURE_2D, txId[0]);  //Use this texture
-	loadBMP("ground.bmp");
+	loadBMP("Textures/ground.bmp");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glBindTexture(GL_TEXTURE_2D, txId[1]);  //Use this texture
-	loadBMP("roof0.bmp");
+	loadBMP("Textures/roof0.bmp");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glBindTexture(GL_TEXTURE_2D, txId[2]);  //Use this texture
-	loadBMP("wall.bmp");
+	loadBMP("Textures/wall.bmp");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glBindTexture(GL_TEXTURE_2D, txId[3]);  //Use this texture
-	loadTGA("organic_bk.tga");
+	loadTGA("Textures/organic_bk.tga");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glBindTexture(GL_TEXTURE_2D, txId[4]);  //Use this texture
-	loadTGA("organic_rt.tga");
+	loadTGA("Textures/organic_rt.tga");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glBindTexture(GL_TEXTURE_2D, txId[5]);  //Use this texture
-	loadTGA("organic_ft.tga");
+	loadTGA("Textures/organic_ft.tga");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glBindTexture(GL_TEXTURE_2D, txId[6]);  //Use this texture
-	loadTGA("organic_lf.tga");
+	loadTGA("Textures/organic_lf.tga");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -476,7 +477,6 @@ void drawSheep() {
 }
 
 
-
 // ------A recursive function to traverse scene graph and render each mesh----------
 // Simplified version for rendering a skeleton mesh
 void render(const aiNode* node)
@@ -544,27 +544,29 @@ void render(const aiNode* node)
 	}
 	else if (((node->mName) == aiString("RightFoot")) || ((node->mName) == aiString("LeftFoot")))
 	{
-		
-			//Calculates the world coordinates of the Right Foot
-		
 		if ((node->mName) == aiString("RightFoot"))
 		{
 			aiNode* parent = node->mParent;
 			aiMatrix4x4 matrices[4];
-			matrices[3] = node->mTransformation;
+			
+			//computing transformation matrices
+			matrices[3] = node->mTransformation; //end point
 			int index = 2;
 			while (parent != NULL) {
+	
 				matrices[index] = parent->mTransformation;
 				parent = parent->mParent;
 				index--;
 			}
+
+			//computing world coordinates of the right foot
 			aiMatrix4x4 worldMatrix = matrices[0];
 			for (int i = 1; i < 4; i++)
 			{
 				worldMatrix *= matrices[i];
 			}
 			rightfootVec = aiVector3D(0, 0, 0);
-			rightfootVec *= worldMatrix;
+			rightfootVec *= worldMatrix;  
 		}
 		glPushMatrix();
 		glTranslatef(0, -1.5, 2);
@@ -610,6 +612,7 @@ void render(const aiNode* node)
 	{
 		aiNode* parent = node->mParent;
 		aiMatrix4x4 matrices[4];
+		
 		matrices[3] = node->mTransformation;
 		int index = 2;
 		while (parent != NULL) {
@@ -623,16 +626,14 @@ void render(const aiNode* node)
 			worldMatrix *= matrices[i];
 		}
 		headVec = aiVector3D(0, 0, 0);
-		headVec *= worldMatrix;
+		headVec *= worldMatrix;            
 	   
-	    glPushMatrix();
-		//glColor4f(1, 0.7529, 0.7961, 1);  // a pink hat
+	    glPushMatrix();         //hat
 		glTranslatef(0, 6, 0);
 		glRotatef(-90, 1, 0, 0);
 		glutSolidCone(10, 5, 20, 20);
 		glPopMatrix();
 		
-
 		glPushMatrix();
 		glTranslatef(0, 2, 0);
 		glutSolidSphere(5, 20, 20);
@@ -671,6 +672,7 @@ void render(const aiNode* node)
 
 	glPopMatrix();
 }
+
 
 //----- Function to update node matrices for each tick ------
 // Complete this function
@@ -719,14 +721,71 @@ void updateNodeMatrices(int tick)
 }
 
 
+void drawBall(float ball_x, float ball_y, float ball_z) {
+	glPushMatrix();
+	glColor3f(0.8784, 1, 1);
+	glTranslatef(ball_x, ball_y, ball_z);
+	glutSolidSphere(0.1, 20, 20);
+	glPopMatrix();
+}
+
+
+void drawBallShadow(float ball_x, float ball_y, float ball_z)
+{
+
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+
+	glPushMatrix();
+	glTranslatef(0, 0.05, 0);
+	glMultMatrixf(shadowMat);
+	glColor4f(0.1, 0.1, 0.1, 1);
+	glTranslatef(ball_x, ball_y, ball_z);
+	glutSolidSphere(0.1, 20, 20);
+	glPopMatrix();
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+
+}
+
+
+void drawRobot() {
+	glPushMatrix(); //robot
+	glScalef(scene_scale, scene_scale, scene_scale);
+	//glTranslatef(-xpos, 0, -zpos);   //Move model to origin
+	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
+	//glColor4f(0.5, 0.5, 0, 1);
+	render(scene->mRootNode);
+	glPopMatrix();
+}
+
+
+void drawRobotShadow() {
+	glDisable(GL_LIGHTING); //robot shadow
+	glDisable(GL_TEXTURE_2D);
+	glPushMatrix();
+	glTranslatef(0, 0.05, 0);
+	glMultMatrixf(shadowMat);
+	glScalef(scene_scale, scene_scale, scene_scale);  //robot shadow
+	//glTranslatef(-xpos, 0, -zpos);
+	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
+	glColor4f(0.1, 0.1, 0.1, 1);
+	render(scene->mRootNode);
+	glPopMatrix();
+	glEnable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+}
+
+
 void kickBall()
 {
 	if (right_ball_y > 0.2)
 	{
-		right_ball_x -= right_ball_vx / 1000 * timeStep;
-		right_ball_y += right_ball_vy / 1000 * timeStep;
-		right_ball_z += right_ball_vz / 1000 * timeStep;
-		right_ball_vy -= gravity / 1000 * timeStep;
+		right_ball_x -= right_ball_vx / velocity_scale_factor * timeStep;
+		right_ball_y += right_ball_vy / velocity_scale_factor * timeStep;
+		right_ball_z += right_ball_vz / velocity_scale_factor * timeStep;
+		right_ball_vy -= gravity / velocity_scale_factor * timeStep;
 	}
 	else if (ballReset)
 	{
@@ -744,14 +803,12 @@ void kickBall()
 }
 
 
-
 void update(int value) {
 	if (!pause){
 		if (tick > tDuration) {
 			tick = 0;
 			ballReset = true;
 		}
-	
 		else {
 			updateNodeMatrices(tick);
 			tick++;
@@ -767,10 +824,9 @@ void update(int value) {
 			//cout << "z" << headVec.z << endl;
 			//cout << "scale" << scene_scale << endl;
 			head_ball_x = headVec.x * scene_scale;
-			head_ball_y = (18.5+headVec.y) * scene_scale;
+			head_ball_y = (18.5 + headVec.y) * scene_scale;
 			head_ball_z = headVec.z * scene_scale;
 		}
-
 		glutTimerFunc(timeStep, update, tick);
 		}
 	else {
@@ -797,8 +853,6 @@ void animal_rotate_timer(int value)
 }
 
 
-
-
 void animal_tail_timer(int value)
 {
 	if (!pause) {
@@ -817,7 +871,6 @@ void animal_tail_timer(int value)
 	glutPostRedisplay();
 
 }
-
 
 
 void special(int key, int x, int y)
@@ -860,8 +913,6 @@ void keyboard(unsigned char key, int x, int y)
 	
 	glutPostRedisplay();
 }
-
-
 
 
 //--------------------OpenGL initialization------------------------
@@ -908,61 +959,6 @@ void initialise()
 }
 
 
-void drawBall(float ball_x, float ball_y, float ball_z) {
-	glPushMatrix();
-	glColor3f(0.8784, 1, 1);
-	glTranslatef(ball_x, ball_y, ball_z);
-	glutSolidSphere(0.1, 20, 20);
-	glPopMatrix();
-}
-
-void drawBallShadow(float ball_x, float ball_y, float ball_z)
-{
-
-	glDisable(GL_LIGHTING);
-	glDisable(GL_TEXTURE_2D);
-
-	glPushMatrix();
-	glTranslatef(0, 0.05, 0);
-	glMultMatrixf(shadowMat);
-	glColor4f(0.1, 0.1, 0.1, 1);
-	glTranslatef(ball_x, ball_y, ball_z);
-	glutSolidSphere(0.1, 20, 20);
-	glPopMatrix();
-
-	glEnable(GL_LIGHTING);
-	glEnable(GL_TEXTURE_2D);
-
-}
-
-
-
-
-void drawRobot() {
-	glPushMatrix(); //robot
-	glScalef(scene_scale, scene_scale, scene_scale);
-	//glTranslatef(-xpos, 0, -zpos);   //Move model to origin
-	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
-	//glColor4f(0.5, 0.5, 0, 1);
-	render(scene->mRootNode);
-	glPopMatrix();
-}
-
-void drawRobotShadow() {
-	glDisable(GL_LIGHTING); //robot shadow
-	glDisable(GL_TEXTURE_2D);
-	glPushMatrix();
-	glTranslatef(0, 0.05, 0);
-	glMultMatrixf(shadowMat);
-	glScalef(scene_scale, scene_scale, scene_scale);  //robot shadow
-	//glTranslatef(-xpos, 0, -zpos);
-	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
-	glColor4f(0.1, 0.1, 0.1, 1);
-	render(scene->mRootNode);
-	glPopMatrix();
-	glEnable(GL_LIGHTING);
-	glEnable(GL_TEXTURE_2D);
-}
 
 //------The main display function---------
 void display()
@@ -981,7 +977,7 @@ void display()
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 	
 	
-	
+	// camera orientation with model in the center
 	glPushMatrix();
 	glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
 	glRotatef(cam_angle, 0, 1, 0);
