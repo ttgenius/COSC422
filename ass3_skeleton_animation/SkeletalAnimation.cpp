@@ -3,6 +3,9 @@
 //
 //  FILE NAME: Skeleton Animation.cpp
 //  See Ex14_SkeletalAnimation.pdf for details 
+// 
+//  Student ID: 97245310
+//  Name: Yuezhang Zhu
 //  ========================================================================
 
 #include <iostream>
@@ -21,9 +24,6 @@ using namespace std;
 #include "loadBMP.h"
 #include "loadTGA.h"
 
-#include "math.h"
-#include "stdlib.h"
-#include "stdio.h"
 
 #define GL_CLAMP_TO_EDGE 0x812F
 
@@ -42,7 +42,6 @@ aiVector3D rightfootVec;
 aiVector3D headVec;
 
 GLuint txId[7];  //Texture ID
-
 
 float toRad = 3.14159265 / 180.0;     //Conversion from degrees to rad
 float angle = 0;
@@ -67,7 +66,6 @@ float cam_move_speed = 1;
 float cam_rotation_speed = 3;
 float cam_angle = 0;
 
-
 float ball_velocity = 10;
 float velocity_scale_factor = 1000;
 float gravity = 9.81;
@@ -86,8 +84,8 @@ float head_ball_x = 0;
 float head_ball_y = 2.25;
 float head_ball_z = 0.2;
 
-
 bool pause = false;
+
 
 void loadTexture(void)
 {
@@ -819,10 +817,7 @@ void update(int value) {
 			if (rightBallKicked) {
 				kickBall();
 			}
-			//cout << "x"<< headVec.x << endl;
-			//cout << "y" << headVec.y << endl;
-			//cout << "z" << headVec.z << endl;
-			//cout << "scale" << scene_scale << endl;
+	        
 			head_ball_x = headVec.x * scene_scale;
 			head_ball_y = (18.5 + headVec.y) * scene_scale;
 			head_ball_z = headVec.z * scene_scale;
@@ -847,7 +842,6 @@ void animal_rotate_timer(int value)
 			pig_angle = 0;
 		}
 	}
-
 	glutTimerFunc(80, animal_rotate_timer, 0);
 	glutPostRedisplay();
 }
@@ -900,17 +894,14 @@ void special(int key, int x, int y)
 		}
 	}
 	glutPostRedisplay();
-
 }
 
 
 void keyboard(unsigned char key, int x, int y)
 {
-
 	if (key == ' ') {
 		pause = !pause;
 	}
-	
 	glutPostRedisplay();
 }
 
@@ -1026,7 +1017,7 @@ void display()
 			}
 		}
 
-		glPopMatrix();
+	glPopMatrix();
 
 	glutSwapBuffers();
 }
